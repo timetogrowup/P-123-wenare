@@ -24,3 +24,14 @@ Patrick signale un HTTP 404 à l'ouverture et des notifications d'échecs GitHub
 - L'adresse actuelle est utilisable. La vérification fonctionnelle et les nouvelles exécutions doivent être observées avant clôture.
 - Le contrôle approfondi HTTPS vérifie des fichiers échantillonnés avec leurs empreintes ; il ne constitue pas un contrôle exhaustif de toutes les lignes.
 - Aucun changement PRIM/Render, secret, autorisation GPS ou règle métier. Aucun contact support.
+
+## Résultat observé
+- Surveillance réactivée : https://github.com/timetogrowup/P-123-wenare/actions/runs/44400396508 — succès, healthy=true.
+- Actualisation publique : https://github.com/timetogrowup/P-123-wenare/actions/runs/44400396455 — succès, contrôle approfondi après publication compris.
+- Données : d1e07e15d914c4db6cb8c0b68b0c3160afdbd06e ; Pages https://github.com/timetogrowup/P-123-wenare/actions/runs/44401242642 — succès.
+- Tests locaux : sept tests Python et 33 tests Node réussis.
+- Collecte source privée 44400403636 réussie, Chromium et WebKit inclus ; données dc0eda66cbb595e2576e75a078aaf38b38919276.
+- Le privé régénère désormais aussi les opportunités lors d'un push ; complément dfdf7f54e1b9522d1d6a6a81610a2af016801c32.
+- De nouvelles recettes sont encore en cours : interface publique 44401621299, opportunités publiques 44400396673, vérification et recettes privées 44402193492 / 44402193522 / 44402193563. Aucun succès final revendiqué pour ces exécutions encore actives.
+- Dossier détaillé et capture : https://github.com/timetogrowup/P-124-wenare-source/blob/main/INCIDENT_2026-11-18_404_ET_ACTIONS.md.
+- Ancienne adresse /WENARE/ toujours en 404 : restauration par renommage restant soumise à accord explicite après le refus du contrôle automatique d'autorisation. L'issue privée #4 reste ouverte pour ce point.
