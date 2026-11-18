@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   qualify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
@@ -33,6 +33,10 @@ jobs:
           node-version: '22'
       - name: Installer les navigateurs de recette
         run: |
+          printf '%s\n' 'https://archive.ubuntu.com/ubuntu' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
+          if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
+            sudo sed -i 's|http://security.ubuntu.com/ubuntu|https://security.ubuntu.com/ubuntu|g' /etc/apt/sources.list.d/ubuntu.sources
+          fi
           npm install --no-save --ignore-scripts playwright@1.62.1
           npx playwright install --with-deps chromium webkit
       - name: Recettes multi-domaines et non-régression transport
