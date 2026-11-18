@@ -1,9 +1,9 @@
 .trip-calls-trigger{cursor:pointer;min-height:44px;min-width:44px;border:0;font:inherit;font-weight:750;touch-action:manipulation}
 .trip-calls-trigger:focus-visible{outline:3px solid var(--wenare-accent,#9c2567);outline-offset:4px}
-.trip-calls-dialog{box-sizing:border-box;width:min(680px,calc(100vw - 24px));max-height:90dvh;margin:auto;padding:0;border:1px solid var(--wenare-border,#b6abc0);border-radius:var(--style-radius,18px);background:var(--wenare-surface,#fff);color:var(--wenare-text,#252036);box-shadow:0 20px 80px #0005;overflow:auto;font-size:1rem}
+.trip-calls-dialog{box-sizing:border-box;width:min(680px,calc(100vw - 24px));max-height:90dvh;margin:auto;padding:0;border:1px solid var(--wenare-border,#b6abc0);border-radius:var(--style-radius,18px);background:var(--wenare-surface,#fff);color:var(--wenare-ink,#252036);box-shadow:0 20px 80px #0005;overflow:auto;font-size:1rem}
 .trip-calls-dialog::backdrop{background:#100a24b8;backdrop-filter:blur(3px)}
 .trip-calls-dialog .trip-calls-header{display:flex;align-items:center;justify-content:space-between;gap:16px;position:sticky;top:0;z-index:1;margin:0;padding:18px 20px;background:var(--wenare-surface,#fff);border-bottom:1px solid var(--wenare-border,#ddd);box-shadow:none;border-radius:0}
-.trip-calls-header h2{font-size:1.15rem;margin:0;line-height:1.4;overflow-wrap:anywhere}
+.trip-calls-dialog .trip-calls-header h2{color:var(--wenare-ink,#252036);font-size:1.15rem;margin:0;line-height:1.4;overflow-wrap:anywhere}
 .trip-calls-dialog button{min-height:44px;cursor:pointer;font:inherit}
 .trip-calls-close{flex-shrink:0;padding:8px 12px}
 .trip-calls-description,.trip-calls-status,.trip-calls-content,.trip-calls-actions{margin:16px 20px}

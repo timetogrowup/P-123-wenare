@@ -20,6 +20,7 @@ function groupsFor(place,wall=Date.now(),mono=performance.now()){
 }
 function select(){dataIssues=false;const wall=Date.now(),mono=performance.now(),all=[...new Map([...railScanned,...scanned].map(p=>[p.id,p])).values()],groups=new Map(all.map(p=>[p.id,groupsFor(p,wall,mono)])),sections=logic.selectSections(scanned,groups,railScanned);places=sections.primary;railPlaces=sections.rail;}
 function render(){
+ const active=document.activeElement,focusedTrip=active?.classList.contains('trip-calls-trigger')?{placeId:active.dataset.placeId,lineId:active.dataset.lineId,direction:active.dataset.direction}:null;
  select();const focusedPlace=document.activeElement?.classList.contains('place-summary')?document.activeElement.dataset.placeId:null;controls();$('nearbyCards').replaceChildren();$('railCards').replaceChildren();$('railOverview').hidden=!railPlaces.length;if(!places.length&&lastFix&&enabled)$('nearbyCards').append(element('p',loading?'⏳ Recherche des départs dans les 60 minutes…':dataIssues?'⚠ Horaires indisponibles ou expirés. Réessayez avec une connexion.':'🔎 Aucun départ dans les 60 minutes à moins de '+radius.toLocaleString('fr-FR')+' m.','nearby-empty'));const nowWall=Date.now(),nowMono=performance.now();
  for(const {i,place,target,prefix} of [...places.map((place,i)=>({place,i,target:'nearbyCards',prefix:'place'})),...railPlaces.map((place,i)=>({place,i,target:'railCards',prefix:'rail'}))]){
  const card=element('article',undefined,'departure-place');card.dataset.view='directions';
@@ -54,6 +55,7 @@ function render(){
  }
  window.dispatchEvent(new CustomEvent('wenare:map-data',{detail:{source:'transport',items:enabled?[...places,...railPlaces].map(p=>({...p,id:String(p.id),category:'transport',mapSummary:p.groups.map(g=>label(g.mode)+' '+g.lineName+' → '+g.nextName+' : '+g.events.map(x=>x.view.label).join(', puis ')).join(' · ')})):[]}}));
  for(const id of ['nearbyCards','railCards'])window.WenareMotion?.cards($(id));
+ if(focusedTrip&&!document.querySelector('#tripCallsDialog[open]'))Array.from(document.querySelectorAll('button.trip-calls-trigger')).find(b=>b.dataset.placeId===focusedTrip.placeId&&b.dataset.lineId===focusedTrip.lineId&&b.dataset.direction===focusedTrip.direction)?.focus({preventScroll:true});
  if(focusedPlace)Array.from(document.querySelectorAll('.place-summary')).find(b=>b.dataset.placeId===focusedPlace)?.focus({preventScroll:true});
 }
 async function catalogues(mine){

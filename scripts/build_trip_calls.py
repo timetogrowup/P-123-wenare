@@ -125,17 +125,22 @@ def build(archive, distribution=pathlib.Path('distribution')):
     first = manifests['timetable']
     if any(m['validFromUtc'] != first['validFromUtc'] or m['validUntilUtc'] != first['validUntilUtc'] for m in manifests.values()):
         raise ValueError('Incompatible transport validity')
-    previous = first.get('tripCallsManifest')
-    if previous:
-        previous_path = distribution / previous['file']
-        if previous_path.is_file():
-            raw = previous_path.read_bytes()
-            old = json.loads(raw)
-            same = old.get('exporterVersion') == VERSION and old.get('sourceSha256') == digest and old.get('selectionValidFromUtc') == first['validFromUtc'] and old.get('selectionValidUntilUtc') == first['validUntilUtc'] and set(old['lines']) == set(line_info)
-            same = same and all(all(old['lines'][line].get(k) == v for k, v in info.items()) for line, info in line_info.items())
-            if same and sha(raw) == previous['sha256']:
-                print('TRIP_CALLS_REUSED', old['generationId'], flush=True)
-                return old
+    # Transport generators replace their manifests; recover the previous immutable
+    # dataset by its bindings rather than relying on a pointer they just removed.
+    candidates = sorted((distribution / 'trip-calls').glob('*/manifest.json'), reverse=True)
+    for previous_path in candidates:
+        raw = previous_path.read_bytes()
+        old = json.loads(raw)
+        same = old.get('exporterVersion') == VERSION and old.get('sourceSha256') == digest and old.get('selectionValidFromUtc') == first['validFromUtc'] and old.get('selectionValidUntilUtc') == first['validUntilUtc'] and set(old['lines']) == set(line_info)
+        same = same and all(all(old['lines'][line].get(k) == v for k, v in info.items()) for line, info in line_info.items())
+        if same:
+            reference = {**descriptor(previous_path, distribution), 'generationId': old['generationId']}
+            for folder, m in manifests.items():
+                m['tripCallsManifest'] = reference
+                m['generationId'] = old['generationId']
+                (distribution / folder / 'manifest.json').write_bytes(encoded(m))
+            print('TRIP_CALLS_REUSED', old['generationId'], flush=True)
+            return old
     generation = dt.datetime.now(dt.timezone.utc).strftime('%Y%m%dT%H%M%S%fZ') + '-' + digest[:12]
     target = distribution / 'trip-calls' / generation
     target.mkdir(parents=True)
