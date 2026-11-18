@@ -2,6 +2,9 @@
 import hashlib,json,pathlib,shutil
 root=pathlib.Path('.')
 manifest=json.loads((root/'release-client/trip-calls-release.json').read_text())
+required={'index.html','nearby-ui.js','timetable.js','sw.js','trip-calls-core.js','trip-calls-loader.js','trip-calls-ui.js','trip-calls.css'}
+if set(manifest['files'])!=required:
+    raise ValueError('A release must contain the complete eight-file client')
 if not json.loads((root/'distribution/mobility/manifest.json').read_text()).get('tripCallsManifest'):
     raise ValueError('Complete trip dataset must be generated before client activation')
 for name,expected in manifest['files'].items():
