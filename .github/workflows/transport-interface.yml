@@ -23,7 +23,13 @@ jobs:
         with:
           python-version: '3.12'
       - name: Installer les navigateurs
+        timeout-minutes: 8
         run: |
+          # Keep Ubuntu signature checks; use the official HTTPS archive.
+          printf '%s\n' 'https://archive.ubuntu.com/ubuntu' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
+          if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
+            sudo sed -i 's|http://security.ubuntu.com/ubuntu|https://security.ubuntu.com/ubuntu|g' /etc/apt/sources.list.d/ubuntu.sources
+          fi
           npm install --no-save --ignore-scripts playwright@1.62.1
           npx playwright install --with-deps chromium webkit
       - name: Tester les interfaces sur les données qualifiées disponibles
