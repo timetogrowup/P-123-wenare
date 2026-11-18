@@ -16,7 +16,10 @@ const {chromium,webkit}=require('playwright'),fs=require('node:fs'),assert=requi
  const first=await page.locator('.trip-calls-origin').innerText();await page.locator('#tripCallsDeparture').selectOption('1');await ready();assert.notEqual(await page.locator('.trip-calls-origin').innerText(),first);
  await page.clock.runFor(1100);assert.equal(await page.locator('#tripCallsDialog').isVisible(),true);assert.equal(await page.evaluate(()=>window.gpsCalls),1);
  await page.setViewportSize({width:320,height:700});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);assert.equal(await page.locator('#tripCallsDialog').evaluate(e=>e.scrollWidth<=e.clientWidth+1),true);
- await page.getByRole('button',{name:'Fermer',exact:true}).click();assert.equal(await page.locator('#tripCallsDialog').isVisible(),false);assert.equal(await page.evaluate(()=>document.activeElement.classList.contains('trip-calls-trigger')),true);
+ await page.getByRole('button',{name:'Fermer',exact:true}).click();assert.equal(await page.locator('#tripCallsDialog').isVisible(),false);
+ // Native dialog close dispatches its completion event asynchronously.
+ await page.waitForFunction(()=>document.activeElement.classList.contains('trip-calls-trigger'),null,{timeout:5000,polling:50});
+ assert.equal(await page.evaluate(()=>document.activeElement.classList.contains('trip-calls-trigger')),true);
  await page.clock.runFor(1100);assert.equal(await page.evaluate(()=>document.activeElement.classList.contains('trip-calls-trigger')),true);
  await page.getByRole('button',{name:/Bus 6501 vers Gare de Saint-Germain.*voir les arrêts/}).click();await ready();assert.match(await page.locator('.trip-calls-stop').last().innerText(),/Gare de Saint-Germain-en-Laye/);await page.keyboard.press('Escape');assert.equal(await page.locator('#tripCallsDialog').isVisible(),false);
  assert.deepEqual(errors,[]);console.log(name+' TRIP_CALLS_BROWSER_OK: two senses, next/following, terminal arrival, pinned modal, no GPS, focus, Escape, 320px');await context.close();

@@ -1,6 +1,11 @@
 const {chromium,webkit}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs');
 (async()=>{const name=process.env.MMI_BROWSER||'chromium',browser=await({chromium,webkit}[name]).launch({headless:true});try{
  const context=await browser.newContext({viewport:{width:390,height:844}}),page=await context.newPage(),errors=[];let requests=0;page.setDefaultTimeout(60000);page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(r.url().includes('/distribution/'))requests++;});
+ // Exercise the same daytime scenario regardless of when CI runs. Server and
+ // device clocks must agree, including when the data window crosses midnight.
+ const transport=JSON.parse(fs.readFileSync('distribution/mobility/manifest.json','utf8')),fixtureNow=Date.parse(transport.validFromUtc)+12*3600000;
+ await page.clock.install({time:fixtureNow});
+ await page.route('**/distribution/**',async route=>{const response=await route.fetch();await route.fulfill({response,headers:{...response.headers(),date:new Date(fixtureNow).toUTCString(),age:'0'}});});
  await page.addInitScript(()=>{if(!localStorage.getItem('home-fixture')){localStorage.setItem('wenare-overview-view','balanced');localStorage.setItem('wenare-theme','rock');localStorage.setItem('home-fixture','1');}window.gpsCalls=0;navigator.geolocation.getCurrentPosition=ok=>{window.gpsCalls++;ok({timestamp:Date.now(),coords:{latitude:48.9478,longitude:2.0328,accuracy:15}});};});
  await page.goto('http://127.0.0.1:8765/');await page.waitForSelector('.departure-place');assert.equal(await page.locator('html').getAttribute('data-wenare-style'),'rock');assert.equal(await page.evaluate(()=>window.gpsCalls),1);
  for(const id of ['styleEntry','styleReel','styleChange','manualOptions','advanced','waitingPanel','tripPanel','networkUpdate'])assert.equal(await page.locator('#'+id).count(),0,id+' removed');assert.equal(await page.locator('button[data-view]').count(),0);assert.ok((await page.locator('.departure-place').evaluateAll(rows=>rows.map(r=>r.dataset.view))).every(v=>v==='directions'));
