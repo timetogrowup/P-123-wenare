@@ -35,3 +35,16 @@ Patrick signale un HTTP 404 à l'ouverture et des notifications d'échecs GitHub
 - De nouvelles recettes sont encore en cours : interface publique 44401621299, opportunités publiques 44400396673, vérification et recettes privées 44402193492 / 44402193522 / 44402193563. Aucun succès final revendiqué pour ces exécutions encore actives.
 - Dossier détaillé et capture : https://github.com/timetogrowup/P-124-wenare-source/blob/main/INCIDENT_2026-11-18_404_ET_ACTIONS.md.
 - Ancienne adresse /WENARE/ toujours en 404 : restauration par renommage restant soumise à accord explicite après le refus du contrôle automatique d'autorisation. L'issue privée #4 reste ouverte pour ce point.
+
+## Résolution de l’adresse historique — 18 novembre 2026
+
+À la demande explicite de Patrick (« Ok fait cette redirection »), l’ancienne adresse est rétablie sans renommer le dépôt applicatif.
+
+- Nouveau dépôt public de compatibilité : https://github.com/timetogrowup/WENARE ; il ne contient que la redirection, sa documentation et le script de migration.
+- GitHub Pages activé sur main, racine. Déploiement 44404224753 : succès, commit 0afe436e75838406800a761b8a2082f71652fc43.
+- Vérification effective dans le navigateur : ouverture de https://timetogrowup.github.io/WENARE/ puis arrivée automatique sur https://timetogrowup.github.io/P-123-wenare/ avec l’accueil WENARE visible.
+- Redirection JavaScript avec conservation des paramètres et du fragment ; repli meta et lien. 404.html renvoie les anciens liens profonds vers l’accueil.
+- sw.js est un script de migration de l’ancienne installation : activation immédiate, désinscription et navigation des fenêtres contrôlées vers l’application actuelle. Aucun cache partagé n’est supprimé. La mise à jour d’une installation existante sur le téléphone de Patrick n’a pas été testée ; elle nécessite un prochain contrôle en ligne.
+- Le dépôt applicatif P-123-wenare et ses workflows restent en place. Conserver le nom WENARE du dépôt de compatibilité pour préserver l’URL.
+- La proposition précédente de restaurer le nom du dépôt applicatif est remplacée par cette solution autorisée et exécutée. Les mentions de 404 ci-dessus décrivent le diagnostic historique.
+- Cette validation concerne l’accès et la redirection ; elle ne clôture pas les autres anomalies de l’application.
