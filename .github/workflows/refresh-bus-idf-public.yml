@@ -66,7 +66,13 @@ jobs:
           node --test tests/test_departures.cjs tests/test_timetable.cjs tests/test_mobility.cjs tests/test_nearby.cjs tests/test_transport_modes.cjs tests/test_line_colours.cjs tests/test_trip_calls.cjs
           node tests/test_trip_calls_real.cjs
       - name: Recette des dessertes sur Chromium et WebKit
+        timeout-minutes: 10
         run: |
+          # Keep Ubuntu signature checks; use the official HTTPS archive.
+          printf '%s\n' 'https://archive.ubuntu.com/ubuntu' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
+          if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
+            sudo sed -i 's|http://security.ubuntu.com/ubuntu|https://security.ubuntu.com/ubuntu|g' /etc/apt/sources.list.d/ubuntu.sources
+          fi
           npm install --no-save --ignore-scripts playwright@1.62.1
           npx playwright install --with-deps chromium webkit
           python -m http.server 8765 > /tmp/trip-calls-http.log 2>&1 &
