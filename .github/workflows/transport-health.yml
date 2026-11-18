@@ -18,7 +18,7 @@ concurrency:
   cancel-in-progress: false
 jobs:
   production-health:
-    if: github.repository == 'timetogrowup/WENARE' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
+    if: github.repository == 'timetogrowup/P-123-wenare' && (github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:

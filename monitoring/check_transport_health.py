@@ -8,7 +8,7 @@ import sys
 import time
 import urllib.request
 
-BASE = 'https://timetogrowup.github.io/WENARE/distribution/'
+BASE = 'https://timetogrowup.github.io/P-123-wenare/distribution/'
 UTC = dt.timezone.utc
 WARNING_HOURS = 18
 

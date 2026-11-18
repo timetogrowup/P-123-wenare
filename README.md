@@ -1,6 +1,6 @@
 # WENARE
 
-[Ouvrir WENARE](https://timetogrowup.github.io/WENARE/)
+[Ouvrir WENARE](https://timetogrowup.github.io/P-123-wenare/)
 
 À l’ouverture, après autorisation GPS, trois points de départ couverts proches sont proposés. Les départs sont regroupés par ligne et premier arrêt desservi, avec le prochain et le suivant ; le manuel reste disponible.
 
@@ -27,7 +27,7 @@ Chaque ligne de transport présente ses deux sens disponibles côte à côte, no
 Préparation des générateurs et du client de livraison pour conserver le véritable direction_id 0/1 par course et afficher le terminus du prochain train dans chaque sens. Le suivant peut avoir un terminus différent, précisé dans le détail. La migration publique régénère et qualifie toutes les données et le client avant un commit atomique. Qualification source privée réussie : qualification source n° 42473720476 (32 Python, 47 Node, huit parcours Chromium/WebKit). Migration publique réussie : https://github.com/timetogrowup/WENARE/actions/runs/42474127590 . Les données directionVersion=1 et le client cache v18 sont activés ensemble ; chaque colonne utilise le sens GTFS et affiche le terminus du prochain départ.
 
 ## Identité et accueil — 8 novembre 2026
-Adresse publique : https://timetogrowup.github.io/WENARE/ . Six distances sur une ligne, bloc Couverture et texte introductif masqués. Erreurs GPS toujours visibles. Rayons étendus manuels ; recherche automatique initiale jusqu’à 3 000 m. Qualification locale : 22 tests Node réussis.
+Adresse publique : https://timetogrowup.github.io/P-123-wenare/ . Six distances sur une ligne, bloc Couverture et texte introductif masqués. Erreurs GPS toujours visibles. Rayons étendus manuels ; recherche automatique initiale jusqu’à 3 000 m. Qualification locale : 22 tests Node réussis.
 
 ## Carte des lieux — 8 novembre 2026
 Accès Carte sous les rayons, dix catégories colorées, mêmes lieux et filtres que la liste, groupes consultables, fiches et accès au guidage à pied. Rotation tactile, nord et recentrage. Détails et validation : [CARTE_LIEUX.md](CARTE_LIEUX.md). Cache interface v26.
@@ -36,3 +36,7 @@ Accès Carte sous les rayons, dix catégories colorées, mêmes lieux et filtres
 Les données régionales incluent désormais les lignes actives du référentiel IDFM : tramways et tram-trains, Transilien, TER présents dans le flux, navettes Orlyval/CDGVAL, câble et funiculaire, en complément du métro, des RER et des bus. La classification repose sur le mode et le sous-mode officiels. Chaque ligne conserve son identifiant, ses sens GTFS et les terminus par départ.
 
 Les nouveaux modes apparaissent dans les points proches et dans la section complémentaire sans bus. Seuls les départs datés exploitables sont proposés ; les services à fréquence ou sans horaire daté ne reçoivent pas de compte à rebours inventé. La couverture par mode est comptabilisée dans le manifeste. Le suivi embarqué reste limité au métro.
+
+
+## Accès et exploitation — 18 novembre 2026
+Adresse actuelle : [Ouvrir WENARE](https://timetogrowup.github.io/P-123-wenare/). Le renommage du dépôt a modifié le chemin Pages. [Diagnostic et interventions](INCIDENT_2026-11-18_404_ET_ACTIONS.md).
