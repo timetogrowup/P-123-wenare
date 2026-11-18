@@ -1,10 +1,10 @@
 {
   "schema_version": 1,
-  "version": "fb521408ef06b268080b3a59",
-  "sha256": "fb521408ef06b268080b3a59f8829182c395bf496d3f4300279392f1c73084c5",
-  "bytes": 2093298,
+  "version": "d27ec948362c36dc7adc28a7",
+  "sha256": "d27ec948362c36dc7adc28a75f4acbb5bbb008bed48a1e98f815cf040648aad5",
+  "bytes": 2117990,
   "file": "network.json",
-  "service_date": "2026-11-18",
+  "service_date": "2026-11-19",
   "counts": {
     "stations": 321,
     "patterns": 108,
@@ -12,6 +12,6 @@
     "stops": 1124,
     "segments": 2133
   },
-  "source_gtfs_sha256": "fde0695ad33f1971b3644f6635f6bb1cf5f24054ccb91ddc7e1631e0734dbe04",
-  "created_utc": "2026-11-18T21:21:34.765537+00:00"
+  "source_gtfs_sha256": "f224616156e547e8ae755bf261e3fde5d89fae21f1ff07a7496b42bfce88b5cf",
+  "created_utc": "2026-11-18T23:28:33.318304+00:00"
 }
