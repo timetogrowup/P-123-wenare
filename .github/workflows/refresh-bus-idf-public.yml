@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   qualify-data:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -53,6 +53,9 @@ jobs:
           python scripts/validate_timetable.py
           retry python scripts/build_bus_network.py
           python scripts/validate_mobility.py
+          python scripts/build_trip_calls.py
+          python scripts/validate_trip_calls.py
+          python scripts/prepare_trip_calls_client.py
           python monitoring/validate_transport_reserve.py
       - name: Tests de non-régression
         run: |
@@ -60,7 +63,17 @@ jobs:
           node tests/test_network.cjs
           node tests/test_journey.cjs
           node tests/test_replay.cjs
-          node --test tests/test_departures.cjs tests/test_timetable.cjs tests/test_mobility.cjs tests/test_nearby.cjs tests/test_transport_modes.cjs tests/test_line_colours.cjs
+          node --test tests/test_departures.cjs tests/test_timetable.cjs tests/test_mobility.cjs tests/test_nearby.cjs tests/test_transport_modes.cjs tests/test_line_colours.cjs tests/test_trip_calls.cjs
+          node tests/test_trip_calls_real.cjs
+      - name: Recette des dessertes sur Chromium et WebKit
+        run: |
+          npm install --no-save --ignore-scripts playwright@1.62.1
+          npx playwright install --with-deps chromium webkit
+          python -m http.server 8765 > /tmp/trip-calls-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID"' EXIT
+          node tests/test_trip_calls_browser.cjs
+          MMI_BROWSER=webkit node tests/test_trip_calls_browser.cjs
       - name: Résumer la qualification sans service d'archivage
         run: |
           echo '## Qualification des horaires' >> "$GITHUB_STEP_SUMMARY"
@@ -71,6 +84,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add distribution/
+          git add index.html nearby-ui.js timetable.js sw.js trip-calls-core.js trip-calls-loader.js trip-calls-ui.js trip-calls.css
           if ! git diff --cached --quiet; then
             git commit -m "data: actualiser les horaires qualifiés de tous les bus IDFM"
             git pull --rebase origin main
@@ -85,6 +99,9 @@ jobs:
       - name: Vérifier le site après publication des horaires
         if: steps.data.outputs.changed == 'true' && github.repository == 'timetogrowup/P-123-wenare'
         run: python monitoring/check_transport_health.py --deep --expected-root distribution --attempts 8 --delay 20
+      - name: Vérifier les dessertes réellement publiées
+        if: steps.data.outputs.changed == 'true' && github.repository == 'timetogrowup/P-123-wenare'
+        run: python monitoring/check_trip_calls.py --expected-root distribution
       - name: Résumer le contrôle après publication
         if: always()
         run: |

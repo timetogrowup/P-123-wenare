@@ -1,0 +1,18 @@
+const {chromium,webkit}=require('playwright'),fs=require('node:fs'),assert=require('node:assert/strict');
+(async()=>{const name=process.env.MMI_BROWSER||'chromium',browser=await ({chromium,webkit}[name]).launch({headless:true,...(process.env.MMI_EXECUTABLE?{executablePath:process.env.MMI_EXECUTABLE}:{})});try{
+ const regional=JSON.parse(fs.readFileSync('distribution/mobility/manifest.json')),index=JSON.parse(fs.readFileSync('distribution/mobility/index.json')),point=index.packed.stations.find(s=>s[4].includes('IDFM:23052'));
+ assert.ok(point,'Reine Blanche must be linked to its official stop ID');
+ const now=Date.parse(regional.validFromUtc)+22*3600000+48*60000,context=await browser.newContext({viewport:{width:390,height:844}}),page=await context.newPage(),errors=[];
+ page.on('pageerror',e=>errors.push(String(e)));await page.clock.install({time:now});
+ await page.addInitScript(({lat,lon})=>{navigator.geolocation.getCurrentPosition=ok=>{window.gpsCalls=(window.gpsCalls||0)+1;ok({timestamp:Date.now(),coords:{latitude:lat,longitude:lon,accuracy:10}});};},{lat:point[2],lon:point[3]});
+ await page.route('**/distribution/**',async route=>{const response=await route.fetch();await route.fulfill({response,headers:{...response.headers(),date:new Date(now).toUTCString(),age:'0'}});});
+ await page.goto(process.env.MMI_BASE_URL||'http://127.0.0.1:8765/');await page.getByRole('button',{name:/📍 Reine Blanche/}).click();
+ const button=page.getByRole('button',{name:/Bus 6501 vers Maison des Insectes.*voir les arrêts/});await button.click();await page.waitForFunction(()=>document.querySelector('#tripCallsDialog')?.dataset.state==='ready');
+ const nextCount=await page.locator('.trip-calls-stop').count();assert.ok(nextCount>0);assert.match(await page.locator('.trip-calls-stop').last().innerText(),/Terminus/);assert.match(await page.locator('.trip-calls-stop').last().innerText(),/Arrivée/);assert.equal(await page.evaluate(()=>window.gpsCalls),1);
+ const first=await page.locator('.trip-calls-origin').innerText();await page.locator('#tripCallsDeparture').selectOption('1');await page.waitForFunction(()=>document.querySelector('#tripCallsDialog')?.dataset.state==='ready');assert.notEqual(await page.locator('.trip-calls-origin').innerText(),first);
+ await page.clock.runFor(1100);assert.equal(await page.locator('#tripCallsDialog').isVisible(),true);assert.equal(await page.evaluate(()=>window.gpsCalls),1);
+ await page.setViewportSize({width:320,height:700});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);assert.equal(await page.locator('#tripCallsDialog').evaluate(e=>e.scrollWidth<=e.clientWidth+1),true);
+ await page.getByRole('button',{name:'Fermer',exact:true}).click();assert.equal(await page.locator('#tripCallsDialog').isVisible(),false);assert.equal(await page.evaluate(()=>document.activeElement.classList.contains('trip-calls-trigger')),true);
+ await page.getByRole('button',{name:/Bus 6501 vers Gare de Saint-Germain.*voir les arrêts/}).click();await page.waitForFunction(()=>document.querySelector('#tripCallsDialog')?.dataset.state==='ready');assert.match(await page.locator('.trip-calls-stop').last().innerText(),/Gare de Saint-Germain-en-Laye/);await page.keyboard.press('Escape');assert.equal(await page.locator('#tripCallsDialog').isVisible(),false);
+ assert.deepEqual(errors,[]);console.log(name+' TRIP_CALLS_BROWSER_OK: two senses, next/following, terminal arrival, pinned modal, no GPS, focus, Escape, 320px');await context.close();
+ }finally{await browser.close();}})().catch(e=>{console.error(e);process.exit(1);});
