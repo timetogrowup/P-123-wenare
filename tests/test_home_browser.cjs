@@ -3,7 +3,11 @@ const {chromium,webkit}=require('playwright'),assert=require('node:assert/strict
  const context=await browser.newContext({viewport:{width:390,height:844}}),page=await context.newPage(),errors=[];let requests=0;page.setDefaultTimeout(60000);page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(r.url().includes('/distribution/'))requests++;});
  // Exercise the same daytime scenario regardless of when CI runs. Server and
  // device clocks must agree, including when the data window crosses midnight.
- const transport=JSON.parse(fs.readFileSync('distribution/mobility/manifest.json','utf8')),fixtureNow=Date.parse(transport.validFromUtc)+12*3600000;
+ const transport=JSON.parse(fs.readFileSync('distribution/mobility/manifest.json','utf8'));
+ const opportunities=JSON.parse(fs.readFileSync('distribution/opportunities/manifest.json','utf8'));
+ // Both independently collected datasets must be valid at the simulated instant.
+ const fixtureNow=Math.max(Date.parse(transport.validFromUtc)+12*3600000,Date.parse(opportunities.collectedAt)+60000);
+ assert.ok(fixtureNow<Math.min(Date.parse(transport.validUntilUtc),Date.parse(opportunities.validUntilUtc)), 'Transport and opportunities must share a valid fixture instant');
  await page.clock.install({time:fixtureNow});
  // A service worker can serve responses without invoking Playwright routing.
  // Keep the server-clock fixture at the application fetch boundary on reloads.
