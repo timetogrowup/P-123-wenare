@@ -29,3 +29,5 @@ jobs:
             --site "https://timetogrowup.github.io/P-123-wenare/" \
             --date "$(date -u +%FT%TZ)" \
             --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+
+# Relevé de référence avant évolution du bandeau Téléportation — 19 novembre 2026.
