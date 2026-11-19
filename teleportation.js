@@ -6,12 +6,25 @@
  'use strict';
  const key='wenare-teleportation-favorites-v1';
  const validTime=value=>Number.isSafeInteger(value)&&Math.abs(value)<=8640000000000000;
+ const mapPointLabel='Point sélectionné sur la carte';
+ function normalizeLabel(label,kind){
+  const value=String(label||'').trim().slice(0,140);
+  const plain=value.replace(/\s+/g,' ');
+  const pair=plain.match(/^([+-]?\d{1,3}(?:[.,]\d+)?)\s*[,;]\s*([+-]?\d{1,3}(?:[.,]\d+)?)$/);
+  const degrees=plain.match(/^(\d{1,2}(?:[.,]\d+)?)\s*°\s*([NS])\s*[,;]?\s*(\d{1,3}(?:[.,]\d+)?)\s*°\s*([EO W])$/i);
+  const number=text=>Number(text.replace(',','.'));
+  const coordinates=(pair&&Math.abs(number(pair[1]))<=90&&Math.abs(number(pair[2]))<=180)||
+   (degrees&&number(degrees[1])<=90&&number(degrees[3])<=180);
+  if(kind==='map-point'||coordinates||value===mapPointLabel)return {label:mapPointLabel,labelKind:'map-point'};
+  if(kind==='unknown'||!value)return {label:'Lieu non identifié',labelKind:'unknown'};
+  return {label:value,labelKind:'named'};
+ }
  function destination(value){
   if(!value||!Number.isFinite(value.lat)||Math.abs(value.lat)>90||
      !Number.isFinite(value.lon)||Math.abs(value.lon)>180||typeof value.label!=='string')return null;
-  const label=value.label.trim().slice(0,140);
-  if(!label)return null;
-  return {lat:value.lat,lon:value.lon,label,...(typeof value.stationId==='string'&&value.stationId?{stationId:value.stationId}:{})};
+  if(!value.label.trim())return null;
+  const named=normalizeLabel(value.label,value.labelKind);
+  return {lat:value.lat,lon:value.lon,...named,...(typeof value.stationId==='string'&&value.stationId?{stationId:value.stationId}:{})};
  }
  function fromPlace(place){
   return destination({lat:place?.lat,lon:place?.lon,label:place?.name,stationId:String(place?.id??'')});
@@ -77,8 +90,10 @@
   const parts=phraseClock.formatToParts(at);
   return parts.find(p=>p.type==='hour').value+' h '+parts.find(p=>p.type==='minute').value;
  }
- function locationText(label){
-  const value=String(label||'').trim();
+ function locationText(label,kind){
+  const named=normalizeLabel(label,kind),value=named.label;
+  if(named.labelKind==='map-point')return 'au point sélectionné sur la carte';
+  if(named.labelKind==='unknown')return 'à un lieu non identifié';
   if(/^(place|rue|avenue|boulevard|quai|cours|square|allée|impasse)\b/i.test(value))return value;
   if(/^(la défense|poissy|auber|paris|argentine|saint-germain-en-laye)$/i.test(value))return 'à '+value;
   return 'ici : '+value;
@@ -89,17 +104,13 @@
    Number.isFinite(p.lon)&&Math.abs(p.lon)<=180&&Number.isFinite(p.accuracy)&&p.accuracy>=0&&
    p.accuracy<=1000&&Number.isFinite(p.timestamp)&&Math.abs(now-p.timestamp)<=60000;
  }
- function coordinateText(p){
-  const number=new Intl.NumberFormat('fr-FR',{minimumFractionDigits:4,maximumFractionDigits:4});
-  return number.format(Math.abs(p.lat))+'° '+(p.lat<0?'S':'N')+', '+number.format(Math.abs(p.lon))+'° '+(p.lon<0?'O':'E');
- }
  function presentation(context,physical,now=Date.now()){
   const exploration=context.mode==='exploration',fixed=exploration&&context.at!==null;
   const when=fixed?context.at:now,otherDay=day.format(when)!==day.format(now);
   const clock=clockText(when),date=otherDay?'Le '+phraseDate.format(when)+', ':'';
   let situation,question='Qu’est-ce qui s’offre à moi ?';
   if(exploration){
-   const label=context.destination.label;
+   const label=normalizeLabel(context.destination.label,context.destination.labelKind).label;
    if(fixed&&when<now){
     situation='Projection '+(otherDay?'du '+phraseDate.format(when)+' à ':'à ')+clock+' : '+label+'. Cette heure est passée.';
     question='Que puis-je explorer autour de ce lieu ?';
@@ -113,13 +124,14 @@
   }else{
    const prefix='Il est '+clock+'. ';
    if(freshPosition(physical,now)){
-    const place=physical.location;
-    situation=prefix+(place?.label&&place.relation==='near'?'Je suis près de '+place.label+'.':
-     place?.label&&place.relation==='at'?'Je suis '+locationText(place.label)+'.':
-     'Ma position : '+coordinateText(physical.position)+'.');
+    const place=physical.location,named=normalizeLabel(place?.label);
+    const known=named.labelKind==='named';
+    situation=prefix+(known&&place.relation==='near'?'Je suis près de '+place.label+'.':
+     known&&place.relation==='at'?'Je suis '+locationText(place.label)+'.':
+     'Lieu non identifié.');
    }else situation=prefix+(physical?.status==='pending'?'Localisation en cours…':'Ma position est indisponible.');
   }
   return {situation,question,exploration,status:exploration?'Téléportation active':''};
  }
- return {destination,fromPlace,resolveStop,createState,createFavorites,time,clockText,locationText,freshPosition,presentation};
+ return {normalizeLabel,destination,fromPlace,resolveStop,createState,createFavorites,time,clockText,locationText,freshPosition,presentation};
 });

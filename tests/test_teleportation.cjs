@@ -122,7 +122,7 @@ test('the header distinguishes real position, immediate and fixed projection ind
 test('the header never invents a real place or reuses stale fixes and formats midnight and DST in Paris',()=>{
  const wall=Date.parse('2026-11-19T22:00:00Z'),gps={mode:'gps'};
  const physical={status:'ready',position:{lat:-48.9,lon:-2.2,accuracy:20,timestamp:wall}};
- assert.match(teleport.presentation(gps,physical,wall).situation,/48,9000° S, 2,2000° O/);
+ assert.equal(teleport.presentation(gps,physical,wall).situation,'Il est 23 h 00. Lieu non identifié.');
  assert.match(teleport.presentation(gps,physical,wall+60001).situation,/position est indisponible/);
  assert.match(teleport.presentation(gps,{status:'pending'},wall).situation,/Localisation en cours/);
  const state=teleport.createState();state.explore({...defense,label:'Auber'},Date.parse('2026-11-19T23:15:00Z'));
@@ -131,4 +131,29 @@ test('the header never invents a real place or reuses stale fixes and formats mi
  assert.equal(teleport.clockText(Date.parse('2026-10-25T01:30Z')),'02 h 30');
  assert.equal(teleport.clockText(Date.parse('2026-03-29T01:30Z')),'03 h 30');
  assert.equal(teleport.locationText('<img onerror=alert(1)>'),'ici : <img onerror=alert(1)>');
+});
+
+
+
+test('coordinate labels are normalized across legacy favorites, projections and saves without losing points',()=>{
+ for(const label of ['48.93300, 2.04100','-48,9000; -2,2000','48,9000° S, 2,2000° O','48.9° N 2.2° E']){
+  const named=teleport.normalizeLabel(label);
+  assert.deepEqual(named,{label:'Point sélectionné sur la carte',labelKind:'map-point'});
+  let saved=JSON.stringify([{id:'legacy',...poissy,label}]);
+  const storage=()=>({getItem:()=>saved,setItem:(_key,value)=>{saved=value;}});
+  const favorites=teleport.createFavorites(storage),point=favorites.read()[0];
+  assert.equal(point.id,'legacy');assert.equal(point.lat,poissy.lat);assert.equal(point.lon,poissy.lon);
+  assert.equal(point.label,named.label);
+  const state=teleport.createState();state.explore(point);
+  const wall=Date.parse('2026-11-19T16:00Z');
+  assert.equal(teleport.presentation(state.read(),{},wall).situation,'Il est 17 h 00. Je me projette au point sélectionné sur la carte.');
+  const raw={mode:'exploration',at:wall+60000,destination:{...poissy,label}};
+  assert.equal(teleport.presentation(raw,{},wall).situation,'Il sera 17 h 01. Je serai au point sélectionné sur la carte.');
+  favorites.add(defense);
+  const restored=teleport.createFavorites(storage).read().find(row=>row.id==='legacy');
+  assert.deepEqual(restored,point);
+ }
+ for(const label of ['Place du 8 Mai 1945','Les 4 Temps','99, 200']){
+  assert.deepEqual(teleport.normalizeLabel(label),{label,labelKind:'named'});
+ }
 });

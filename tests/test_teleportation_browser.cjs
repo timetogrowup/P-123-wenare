@@ -23,7 +23,7 @@ const data={
  patterns:[]
 };
 
-async function fixture(context,denyGPS=false){
+async function fixture(context,denyGPS=false,overrides={}){
  const page=await context.newPage(),errors=[];
  page.on('pageerror',error=>errors.push(error.message));
  await page.clock.install({time:now});
@@ -68,7 +68,8 @@ async function fixture(context,denyGPS=false){
   const url=new URL(route.request().url());
   if(url.origin!==new URL(base).origin)return route.abort();
   if(url.pathname==='/walking-fixture')return route.fulfill({status:503});
-  const script=url.pathname.split('/').pop();
+  const script=url.pathname.split('/').pop()||'index.html';
+  if(Object.hasOwn(overrides,script))return route.fulfill({contentType:script.endsWith('.css')?'text/css':'text/html',body:overrides[script]});
   if(!patches[script])return route.continue();
   return route.fulfill({contentType:'application/javascript',body:fs.readFileSync(script,'utf8')+'\n'+patches[script]});
  });

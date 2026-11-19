@@ -4,6 +4,19 @@
  const $=id=>document.getElementById(id);
  let physical={status:'pending',position:null,location:null},headerTimer=null,returnPending=false,returnAttempt=0;
  const header=$('wenareHeader');
+ let headerHeight=-1;
+ function measureHeader(){
+  const height=Math.ceil(header.getBoundingClientRect().height);
+  if(height!==headerHeight){headerHeight=height;document.documentElement.style.setProperty('--wenare-header-height',height+'px');}
+ }
+ if(typeof ResizeObserver==='function')new ResizeObserver(measureHeader).observe(header);
+ else{window.addEventListener('resize',measureHeader);window.addEventListener('wenare:style',measureHeader);}
+ measureHeader();
+ document.addEventListener('focusin',event=>{
+  if(header.contains(event.target)||event.target.closest?.('dialog'))return;
+  const box=event.target.getBoundingClientRect(),bottom=header.getBoundingClientRect().bottom;
+  if(box.top<bottom+8&&box.bottom>0)window.scrollBy({top:box.top-bottom-8,behavior:'instant'});
+ });
  function renderHeader(announce=false){
   const context=state.read(),now=Date.now(),view=core.presentation(context,physical,now);
   header.dataset.teleportation=String(view.exploration);

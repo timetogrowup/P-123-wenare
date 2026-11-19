@@ -65,3 +65,71 @@
  #wenareHeader { gap: 8px; flex-wrap: wrap; }
  #wenareHeader .wenare-situation-copy { flex-basis: calc(100% - 60px); }
 }
+
+
+/* Only the application header sticks; dialog headers retain their own layout. */
+html { scroll-padding-top: calc(var(--wenare-header-height, 0px) + 8px); }
+html body main { padding-top: 0; }
+html body :is([id], button, a, summary, [tabindex]) { scroll-margin-top: calc(var(--wenare-header-height, 0px) + 8px); }
+html body #wenareHeader {
+ position: sticky; top: 0; z-index: 100; isolation: isolate;
+ display: grid; grid-template-columns: 44px minmax(0, 1fr) auto;
+ align-items: center; gap: 3px 6px;
+ margin: 0 0 8px; padding: calc(4px + env(safe-area-inset-top, 0px)) 4px 6px;
+ border: 0; border-bottom: 3px solid var(--wenare-accent, #1659aa);
+ border-radius: 0; box-shadow: 0 3px 8px #00000012;
+ background: var(--header-background, var(--wenare-surface, #fff));
+ background-color: var(--wenare-surface, #fff);
+ max-height: 60vh; max-height: 60dvh; overflow: auto;
+}
+html body #wenareHeader::after { content: none; }
+html body #wenareHeader .wenare-situation-copy { display: contents; }
+html body #wenareHeader #wenareLogoSignal { grid-column: 1; grid-row: 1; width: 44px; height: 44px; }
+html body #wenareHeader .wenare-mark { width: 32px; height: 32px; }
+html body #wenareHeader h1 { grid-column: 2; grid-row: 1; margin: 0; min-width: 0; font-size: 1.25rem; line-height: 1.25; }
+html body #wenareHeader .wenare-header-actions {
+ grid-column: 3; grid-row: 1; display: flex; gap: 4px; flex: none; min-width: 0;
+}
+html body #wenareHeader .wenare-header-actions button {
+ margin: 0; padding: 4px; width: 44px; min-width: 44px; height: 44px; min-height: 44px;
+}
+html body #wenareHeader .teleport-button svg { width: 30px; height: 30px; }
+html body #wenareHeader #wenareSituation {
+ grid-column: 1 / -1; grid-row: 2; margin: 0; max-width: none; font-size: 1rem; line-height: 1.25;
+ overflow-wrap: anywhere;
+}
+html body #wenareHeader .wenare-header-caption {
+ grid-column: 1 / -1; grid-row: 3; display: flex; align-items: baseline;
+ flex-wrap: wrap; gap: 2px 12px; min-width: 0; flex: none;
+}
+html body #wenareHeader #wenareQuestion, html body #wenareHeader #wenareProjectionStatus {
+ margin: 0; font-size: .875rem; line-height: 1.25;
+}
+html body #wenareHeader #wenareSituationAnnouncement { grid-column: 1 / -1; }
+html body #wenareHeader[data-teleportation="true"] {
+ --wenare-header-background: #0b1020; --wenare-header-ink: #f7fbff;
+ --wenare-header-accent: #c6ebff; --wenare-header-focus: #7dd3fc;
+ background: var(--wenare-header-background); color: var(--wenare-header-ink);
+ border-bottom-color: var(--wenare-header-focus);
+}
+html body #wenareHeader[data-teleportation="true"] :is(h1, p, small) {
+ color: var(--wenare-header-ink); opacity: 1;
+}
+html body #wenareHeader[data-teleportation="true"] :is(.wenare-mark, #wenareProjectionStatus) {
+ color: var(--wenare-header-accent); opacity: 1;
+}
+html body #wenareHeader[data-teleportation="true"] .wenare-mark path { stroke: var(--wenare-header-background); }
+html:is([data-wenare-style="jazz"], [data-wenare-style="swing"]) body #wenareHeader[data-teleportation="true"] .wenare-mark path { stroke: var(--wenare-header-accent); }
+html body #wenareHeader[data-teleportation="true"] .wenare-header-actions button {
+ background: #1d2c48; color: var(--wenare-header-ink); border: 1px solid var(--wenare-header-accent);
+}
+html body #wenareHeader[data-teleportation="true"] button:focus-visible {
+ outline: 3px solid var(--wenare-header-focus); outline-offset: -3px;
+}
+html body dialog :is([id], button, a, summary, [tabindex]) { scroll-margin-top: 8px; }
+
+/* Icon size stays independent of text zoom; radii reflow when text is enlarged. */
+html body #wenareHeader .settings-open span { display: block; font-size: 24px; line-height: 1; }
+html body #nearbyOverview .radius-buttons {
+ grid-template-columns: repeat(auto-fit, minmax(min(100%, 2.5rem), 1fr));
+}

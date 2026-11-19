@@ -29,7 +29,7 @@ function selectPoint(point){
 }
 function selectCoordinates(latLng){
  const lat=latLng.lat,lon=((latLng.lng+180)%360+360)%360-180;
- selectPoint(teleportCore.destination({lat,lon,label:lat.toFixed(5)+', '+lon.toFixed(5)}));
+ selectPoint(teleportCore.destination({lat,lon,label:'Point sélectionné sur la carte',labelKind:'map-point'}));
 }
 for(const r of WenareOpportunities.RADII){const o=el('option',r.toLocaleString('fr-FR')+' m');o.value=String(r);$('placesRadius').append(o);}
 for(const c of [{id:'all',short:'Tout voir'},...categories]){const o=el('option',c.short);o.value=c.id;$('placesCategory').append(o);}
