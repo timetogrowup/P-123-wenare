@@ -108,7 +108,7 @@ jobs:
           script: await github.rest.repos.requestPagesBuild({...context.repo});
       - name: Vérifier le site après publication des horaires
         if: steps.data.outputs.changed == 'true' && github.repository == 'timetogrowup/P-123-wenare'
-        run: python monitoring/check_transport_health.py --deep --expected-root distribution --attempts 8 --delay 20
+        run: python monitoring/check_transport_health.py --deep --expected-root distribution --attempts 30 --delay 20
       - name: Vérifier les dessertes réellement publiées
         if: steps.data.outputs.changed == 'true' && github.repository == 'timetogrowup/P-123-wenare'
         run: python monitoring/check_trip_calls.py --expected-root distribution
