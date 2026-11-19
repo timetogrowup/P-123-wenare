@@ -23,7 +23,13 @@ const {chromium,webkit}=require('playwright'),fs=require('node:fs'),assert=requi
      '\n'+await dialog.textContent()+'\nErreurs navigateur : '+errors.join(' | '),{cause:error});
   }
  }
- await page.goto(process.env.MMI_BASE_URL||'http://127.0.0.1:8765/');await page.getByRole('button',{name:/📍 Reine Blanche/}).click();
+ await page.goto(process.env.MMI_BASE_URL||'http://127.0.0.1:8765/');
+ // Settle progressive loading before interacting; then advance timers explicitly below.
+ // The fixture remains at the same late-service instant and keeps both-sense assertions.
+ await page.waitForFunction(()=>document.querySelector('#nearbyOverviewStatus').textContent.startsWith('🕒 60 prochaines minutes'));
+ const pausedAt=await page.evaluate(()=>Date.now())+1000;await page.clock.pauseAt(pausedAt);
+ const place=page.getByRole('button',{name:/📍 Reine Blanche/});await place.click();
+ assert.equal(await place.getAttribute('aria-expanded'),'true','Reine Blanche must be expanded before choosing a departure');
  const button=page.getByRole('button',{name:/Bus 6501 vers Maison des Insectes.*voir les arrêts/});await button.click();await ready('Maison des Insectes');
  const nextCount=await page.locator('.trip-calls-stop').count();assert.ok(nextCount>0);assert.match(await page.locator('.trip-calls-stop').last().innerText(),/Terminus/);assert.match(await page.locator('.trip-calls-stop').last().locator('.trip-calls-time').innerText(),/\d\d:\d\d/);assert.ok((await page.locator('.trip-calls-time').allTextContents()).every(s=>!/(Arrivée|départ)/i.test(s)));assert.equal(await page.evaluate(()=>window.gpsCalls),1);
  const contrasts=await page.evaluate(()=>{const original=WenareThemes.current?.()||document.documentElement.dataset.wenareStyle;const result=[];const light=c=>{const rgb=c.match(/[\d.]+/g).slice(0,3).map(Number).map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4;});return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;};for(const theme of WenareThemes.list){WenareThemes.select(theme.id);const d=getComputedStyle(document.querySelector('#tripCallsDialog')),h=getComputedStyle(document.querySelector('#tripCallsTitle')),bg=light(d.backgroundColor);result.push({theme:theme.id,title:(Math.max(light(h.color),bg)+.05)/(Math.min(light(h.color),bg)+.05),body:(Math.max(light(d.color),bg)+.05)/(Math.min(light(d.color),bg)+.05)});}WenareThemes.select(original);return result;});for(const c of contrasts){assert.ok(c.title>=4.5,JSON.stringify(c));assert.ok(c.body>=4.5,JSON.stringify(c));}
