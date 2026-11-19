@@ -31,5 +31,16 @@
     "empreinte": "460e8da22a7f95a1dc9f708974314a1327c381c8ec42a17ba2e3fef0e384cd27",
     "inventaire": "inventaires/v000003.json",
     "fichiers": 36432
+  },
+  {
+    "version": 4,
+    "date_releve_utc": "2026-11-19T19:42:30Z",
+    "commit": "10e539dbe602f58488b1e0c6367f43ba52af0e55",
+    "tag": "production-v000004",
+    "deploiement": "https://github.com/timetogrowup/P-123-wenare/actions/runs/44600266576",
+    "releve": "https://github.com/timetogrowup/P-123-wenare/actions/runs/44600941026",
+    "empreinte": "8abe13fc04f54a888a05a62cf60149cc669b525ac2eefa918bef09a2a7d3cbd2",
+    "inventaire": "inventaires/v000004.json",
+    "fichiers": 53552
   }
 ]
