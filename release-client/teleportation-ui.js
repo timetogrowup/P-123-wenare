@@ -2,6 +2,32 @@
  'use strict';
  const core=window.WenareTeleportation, state=core.createState(), favorites=core.createFavorites(()=>localStorage);
  const $=id=>document.getElementById(id);
+ let physical={status:'pending',position:null,location:null},headerTimer=null,returnPending=false,returnAttempt=0;
+ const header=$('wenareHeader');
+ function renderHeader(announce=false){
+  const context=state.read(),now=Date.now(),view=core.presentation(context,physical,now);
+  header.dataset.teleportation=String(view.exploration);
+  header.dataset.documentHidden=String(document.hidden);
+  for(const [id,text] of [['wenareSituation',view.situation],['wenareQuestion',view.question],['wenareProjectionStatus',view.status]]){
+   const node=$(id);if(node.textContent!==text)node.textContent=text;
+  }
+  $('wenareProjectionStatus').hidden=!view.exploration;
+  if(announce)$('wenareSituationAnnouncement').textContent=(view.status?view.status+'. ':'')+view.situation;
+  clearTimeout(headerTimer);
+  if(!document.hidden){
+   const boundary=context.mode==='exploration'&&context.at!==null&&context.at>=now?context.at-now+1:Infinity;
+   headerTimer=setTimeout(()=>{renderHeader();for(const el of document.querySelectorAll('.teleport-banner'))el.refresh();},Math.min(60000-now%60000,boundary));
+  }
+ }
+ window.addEventListener('wenare:physical-position',event=>{physical=event.detail;renderHeader();});
+ document.addEventListener('visibilitychange',()=>renderHeader());
+ window.addEventListener('pageshow',()=>renderHeader());
+ function syncReturnButtons(){
+  for(const button of document.querySelectorAll('[data-return-position]')){
+   button.disabled=returnPending;
+   button.textContent=returnPending?'Recherche de ma position…':'Revenir à ma position';
+  }
+ }
  const create=(tag,text,cls)=>{
   const el=document.createElement(tag);
   if(text)el.textContent=text;
@@ -52,17 +78,34 @@
   ],{duration:530,easing:'ease-out'});
  }
  function refresh({focus=true}={}){
+  renderHeader(true);
   window.dispatchEvent(new CustomEvent('wenare:teleportation',{detail:state.read()}));
   for(const banner of document.querySelectorAll('.teleport-banner'))banner.refresh();
+  syncReturnButtons();
   if(focus)(document.querySelector('#placesDialog[open] .teleport-banner')||$('teleportBanner')).focus();
  }
  function explore(point,at=null){
   if(!state.explore(point,at))return;
+  returnAttempt++;returnPending=false;
   notify('');refresh();animate();
  }
- function reset(){
-  state.reset();notify('');refresh({focus:false});
-  (document.querySelector('#placesDialog[open] #placesClose')||$('openTeleportation')).focus({preventScroll:true});
+ async function reset(){
+  if(returnPending)return;
+  const attempt=++returnAttempt,revision=state.read().revision;
+  returnPending=true;syncReturnButtons();notify('Recherche de ma position…');
+  try{
+   if(!window.WenareOverview?.returnToPosition)throw {code:2};
+   const ready=await window.WenareOverview.returnToPosition();
+   if(attempt!==returnAttempt||state.read().revision!==revision)return;
+   if(!ready){notify('La position a changé. Réessayez le retour à ma position.');return;}
+   state.reset();notify('');refresh({focus:false});
+   (document.querySelector('#placesDialog[open] #placesClose')||$('openTeleportation')).focus({preventScroll:true});
+  }catch(error){
+   if(attempt!==returnAttempt||state.read().revision!==revision)return;
+   notify(error.code===1?'Autorisez la localisation pour revenir à votre position.':'Position indisponible. La téléportation reste active. Réessayez.');
+  }finally{
+   if(attempt===returnAttempt){returnPending=false;syncReturnButtons();}
+  }
  }
  function banner(){
   const el=create('section',null,'teleport-banner');el.tabIndex=-1;
@@ -70,7 +113,10 @@
   feedback.setAttribute('role','status');
   const actions=create('div',null,'teleport-actions');
   const present=secondary('Maintenant',()=>explore(state.read().destination));
-  actions.append(present,secondary('Ajouter aux lieux habituels',()=>add(state.read().destination)),secondary('Revenir à ma position',reset));
+  const returnButton=secondary('Revenir à ma position',reset);returnButton.dataset.returnPosition='';
+  returnButton.disabled=returnPending;
+  if(returnPending)returnButton.textContent='Recherche de ma position…';
+  actions.append(present,secondary('Ajouter aux lieux habituels',()=>add(state.read().destination)),returnButton);
   el.append(label,status,actions,feedback);
   el.refresh=()=>{
    const context=state.read();
@@ -122,4 +168,5 @@
   if(state.read().at!==null)for(const el of document.querySelectorAll('.teleport-banner'))el.refresh();
  },30000);
  window.WenareTeleportationUI={button,secondary,banner,explore,add,chooseTrip,read:state.read};
+ renderHeader();
 })();

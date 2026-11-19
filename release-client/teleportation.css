@@ -34,3 +34,34 @@
 .teleport-exploration-pin { color: #743dd2; }
 .trip-calls-stop .teleport-button { align-self: flex-start; margin-top: 5px; }
 @media (prefers-reduced-motion: reduce) { .teleport-effect { display: none; } }
+
+/* The situation signal owns these transforms; decorative theme motion does not. */
+#wenareHeader .motion-logo { animation: none !important; will-change: auto; }
+#wenareHeader { gap: 12px; }
+#wenareLogoSignal { display: inline-grid; flex-shrink: 0; width: 44px; height: 44px; place-items: center; }
+#wenareNameSignal { display: inline-block; transform-origin: center; }
+#wenareHeader .wenare-situation-copy { min-width: 0; flex: 1; overflow-wrap: anywhere; }
+#wenareHeader #wenareSituation, #wenareHeader #wenareQuestion { font-size: .9rem; line-height: 1.35; }
+#wenareProjectionStatus { margin-top: 6px; font-weight: 750; color: inherit; }
+#wenareHeader[data-teleportation="true"] :is(#wenareLogoSignal, #wenareNameSignal) {
+ animation: wenare-teleport-shake 480ms linear infinite;
+ will-change: transform;
+}
+#wenareHeader[data-document-hidden="true"] :is(#wenareLogoSignal, #wenareNameSignal) { animation-play-state: paused; }
+@keyframes wenare-teleport-shake {
+ 0%,100% { transform: translate(0,0) rotate(0); }
+ 12.5% { transform: translate(-3px,1px) rotate(-1deg); }
+ 25% { transform: translate(3px,-1px) rotate(1deg); }
+ 37.5% { transform: translate(-2px,-1px) rotate(-1deg); }
+ 50% { transform: translate(3px,1px) rotate(1deg); }
+ 62.5% { transform: translate(-3px,0) rotate(-1deg); }
+ 75% { transform: translate(2px,-1px) rotate(1deg); }
+ 87.5% { transform: translate(-2px,1px) rotate(-1deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+ #wenareHeader[data-teleportation] :is(#wenareLogoSignal, #wenareNameSignal) { animation: none !important; will-change: auto; }
+}
+@media (max-width: 360px) {
+ #wenareHeader { gap: 8px; flex-wrap: wrap; }
+ #wenareHeader .wenare-situation-copy { flex-basis: calc(100% - 60px); }
+}

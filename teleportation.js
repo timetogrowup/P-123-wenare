@@ -71,5 +71,55 @@
   const hour=clock.format(at);
   return day.format(at)===day.format(reference)?hour:day.format(at)+' à '+hour;
  }
- return {destination,fromPlace,resolveStop,createState,createFavorites,time};
+ const phraseClock=new Intl.DateTimeFormat('fr-FR',{...zone,hour:'2-digit',minute:'2-digit'});
+ const phraseDate=new Intl.DateTimeFormat('fr-FR',{...zone,day:'numeric',month:'long',year:'numeric'});
+ function clockText(at){
+  const parts=phraseClock.formatToParts(at);
+  return parts.find(p=>p.type==='hour').value+' h '+parts.find(p=>p.type==='minute').value;
+ }
+ function locationText(label){
+  const value=String(label||'').trim();
+  if(/^(place|rue|avenue|boulevard|quai|cours|square|allée|impasse)\b/i.test(value))return value;
+  if(/^(la défense|poissy|auber|paris|argentine|saint-germain-en-laye)$/i.test(value))return 'à '+value;
+  return 'ici : '+value;
+ }
+ function freshPosition(physical,now){
+  const p=physical?.position;
+  return physical?.status==='ready'&&p&&Number.isFinite(p.lat)&&Math.abs(p.lat)<=90&&
+   Number.isFinite(p.lon)&&Math.abs(p.lon)<=180&&Number.isFinite(p.accuracy)&&p.accuracy>=0&&
+   p.accuracy<=1000&&Number.isFinite(p.timestamp)&&Math.abs(now-p.timestamp)<=60000;
+ }
+ function coordinateText(p){
+  const number=new Intl.NumberFormat('fr-FR',{minimumFractionDigits:4,maximumFractionDigits:4});
+  return number.format(Math.abs(p.lat))+'° '+(p.lat<0?'S':'N')+', '+number.format(Math.abs(p.lon))+'° '+(p.lon<0?'O':'E');
+ }
+ function presentation(context,physical,now=Date.now()){
+  const exploration=context.mode==='exploration',fixed=exploration&&context.at!==null;
+  const when=fixed?context.at:now,otherDay=day.format(when)!==day.format(now);
+  const clock=clockText(when),date=otherDay?'Le '+phraseDate.format(when)+', ':'';
+  let situation,question='Qu’est-ce qui s’offre à moi ?';
+  if(exploration){
+   const label=context.destination.label;
+   if(fixed&&when<now){
+    situation='Projection '+(otherDay?'du '+phraseDate.format(when)+' à ':'à ')+clock+' : '+label+'. Cette heure est passée.';
+    question='Que puis-je explorer autour de ce lieu ?';
+   }else if(fixed){
+    situation=date+(otherDay?'il':'Il')+' sera '+clock+'. Je serai '+locationText(label)+'.';
+    question='Qu’est-ce qui s’offrira à moi ?';
+   }else{
+    situation='Il est '+clock+'. Je me projette '+locationText(label)+'.';
+    question='Qu’est-ce qui s’offre à moi là-bas ?';
+   }
+  }else{
+   const prefix='Il est '+clock+'. ';
+   if(freshPosition(physical,now)){
+    const place=physical.location;
+    situation=prefix+(place?.label&&place.relation==='near'?'Je suis près de '+place.label+'.':
+     place?.label&&place.relation==='at'?'Je suis '+locationText(place.label)+'.':
+     'Ma position : '+coordinateText(physical.position)+'.');
+   }else situation=prefix+(physical?.status==='pending'?'Localisation en cours…':'Ma position est indisponible.');
+  }
+  return {situation,question,exploration,status:exploration?'Téléportation active':''};
+ }
+ return {destination,fromPlace,resolveStop,createState,createFavorites,time,clockText,locationText,freshPosition,presentation};
 });

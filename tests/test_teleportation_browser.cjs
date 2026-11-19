@@ -81,7 +81,8 @@ async function button(page,id,text){
  await control.click();
 }
 
-(async()=>{
+module.exports={fixture,now,origin,defense,auber,arrival};
+if(require.main===module)(async()=>{
  const browser=await ({chromium,webkit}[browserName]).launch({
   headless:true,...(process.env.MMI_EXECUTABLE?{executablePath:process.env.MMI_EXECUTABLE}:{})
  });

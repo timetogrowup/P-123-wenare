@@ -10,6 +10,50 @@ let scanned=[],railScanned=[],railPlaces=[],loading=false,dataIssues=false;
 let candidates=[],radius=250,manualRadius=false;
 const expanded=new Set();
 let lineColours=new Map();
+let physicalRequest=0,fixExpiry=null;
+function publishPhysical(status){
+ const valid=logic.validPosition(lastFix?.coords,lastFix?.timestamp),position=valid?{
+  lat:lastFix.coords.latitude,lon:lastFix.coords.longitude,accuracy:lastFix.coords.accuracy,timestamp:lastFix.timestamp
+ }:null;
+ let location=null;
+ if(position){
+  const points=[...new Set(locations.values())].filter(p=>p.name&&Number.isFinite(p.lat)&&Number.isFinite(p.lon));
+  const nearest=core.nearby(points,position,1)[0];
+  if(nearest&&nearest.distance+position.accuracy<=250)location={label:'l’arrêt « '+nearest.name+' »',relation:'near',source:'catalogue'};
+ }
+ window.dispatchEvent(new CustomEvent('wenare:physical-position',{detail:{
+  status:valid?'ready':status,position,requestId:physicalRequest,location
+ }}));
+}
+function acceptPhysical(position){
+ lastFix=position;clearTimeout(fixExpiry);publishPhysical('ready');
+ fixExpiry=setTimeout(()=>publishPhysical('stale'),Math.max(1,position.timestamp+60001-Date.now()));
+}
+async function physicalPosition(reuse=true){
+ const requestId=++physicalRequest;
+ if(reuse&&logic.validPosition(lastFix?.coords,lastFix?.timestamp))return {position:lastFix,requestId};
+ publishPhysical('pending');
+ const position=await new Promise((resolve,reject)=>{
+  if(!navigator.geolocation){reject({code:2});return;}
+  const timeout=setTimeout(()=>reject({code:3}),15000);
+  const done=fn=>value=>{clearTimeout(timeout);fn(value);};
+  try{navigator.geolocation.getCurrentPosition(done(resolve),done(reject),{enableHighAccuracy:true,timeout:15000,maximumAge:15000});}
+  catch(error){clearTimeout(timeout);reject(error);}
+ });
+ if(!logic.validPosition(position?.coords,position?.timestamp))throw {code:2};
+ return {position,requestId};
+}
+async function returnToPosition(){
+ const revision=teleport.read().revision;
+ try{
+  const {position,requestId}=await physicalPosition();
+  if(requestId!==physicalRequest||teleport.read().revision!==revision)return false;
+  acceptPhysical(position);return true;
+ }catch(error){
+  if(teleport.read().revision!==revision)return false;
+  publishPhysical('unavailable');throw error;
+ }
+}
 function paintBadge(badge,lineId){return WenareLineColours.apply(badge,lineColours.get(lineId));}
 const icon=mode=>({metro:'Ⓜ',rer:'Ⓡ',bus:'🚌',tram:'Ⓣ',train:'🚆',ter:'🚆',shuttle:'🚈',cable:'🚡',funicular:'🚞'}[mode]||'🚏');
 function badge(service){const e=element('span',icon(service.mode)+' '+label(service.mode)+' '+service.lineName,'line-badge mode-'+service.mode);e.title=label(service.mode)+' '+service.lineName;return paintBadge(e,service.lineId);}
@@ -17,7 +61,7 @@ function controls(){document.querySelectorAll('[data-radius]').forEach(b=>b.setA
 const label=mode=>({metro:'Métro',rer:'RER',bus:'Bus',tram:'Tram',train:'Transilien',ter:'TER',shuttle:'Navette',cable:'Câble',funicular:'Funiculaire'}[mode]||'Transport');
 const say=text=>{$('nearbyOverviewStatus').textContent=text;$('nearbyOverviewStatus').classList.toggle('is-error',/⚠|indisponible|Autorisez|imprécise|trop ancienne|hors (de la )?période|aucun arrêt/i.test(text));};
 function cancel(clear=true){sequence++;controller?.abort();controller=null;clearTimeout(timer);clearInterval(tick);timer=tick=null;if(clear){places=[];railPlaces=[];scanned=[];railScanned=[];loading=false;results.clear();$('nearbyCards').replaceChildren();$('railCards').replaceChildren();$('railOverview').hidden=true;}controls();}
-function fallback(text){enabled=false;lastFix=null;controls();say(text);}
+function fallback(text){enabled=false;publishPhysical('unavailable');controls();say(text);}
 function element(tag,text,className){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(className)e.className=className;return e;}
 function groupsFor(place,wall=Date.now(),mono=performance.now()){
  const observations=[],choices=[];for(const service of place.services){const row=results.get(service.key);if(!row)continue;if(row.error){dataIssues=true;continue;}const now=row.clock.server+mono-row.clock.mono;if(Math.abs((wall-row.clock.wall)-(mono-row.clock.mono))>30000||now>=Date.parse(row.response.validUntilUtc)){dataIssues=true;continue;}choices.push(...(row.response.tripChoices||[]));for(const event of row.response.departures){if(projected()){const time=Date.parse(event.scheduledTimeUtc);if(time>=context.at&&time<context.at+3600000)observations.push({service,event,view:{time,active:true,label:hour(time)}});}else{const view=core.presentation(event,now);if(logic.imminent(view,now))observations.push({service,event,view});}}}
@@ -106,10 +150,10 @@ async function start(silent=false,reuseFix=false){silent=silent===true&&!!center
  const catalogue=catalogues(mine);
  if(context.mode==='gps'){
  if(!navigator.geolocation){fallback('Localisation indisponible sur cet appareil. Actualisez la page pour réessayer.');return;}
- let position=lastFix;try{if(!reuseFix||!logic.validPosition(position?.coords,position?.timestamp))position=await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,timeout:15000,maximumAge:15000}));}catch(error){if(mine===sequence)fallback(error.code===1?'Autorisez la localisation pour voir vos départs automatiquement. Autorisez-la dans les paramètres du navigateur, puis actualisez la page.':'Position indisponible. Actualisez la page pour réessayer.');return;}
- if(mine!==sequence)return;if(!logic.validPosition(position.coords,position.timestamp)){fallback('Position trop ancienne ou imprécise. Actualisez la page pour réessayer.');return;}lastFix=position;
+ let fix;try{fix=await physicalPosition(reuseFix);}catch(error){if(mine===sequence)fallback(error.code===1?'Autorisez la localisation pour voir vos départs automatiquement. Autorisez-la dans les paramètres du navigateur, puis actualisez la page.':'Position indisponible. Actualisez la page pour réessayer.');return;}
+ if(mine!==sequence||fix.requestId!==physicalRequest)return;acceptPhysical(fix.position);
  }
- const stations=await catalogue;if(mine!==sequence||!stations)return;if(!stations.length){candidates=[];render();say('⚠ Données de transport indisponibles.');return;}
+ const stations=await catalogue;if(mine!==sequence||!stations)return;publishPhysical('stale');if(!stations.length){candidates=[];render();say('⚠ Données de transport indisponibles.');return;}
  if(!silent)results.clear();else for(const row of results.values())row.refreshPending=true;scanned=[];railScanned=[];candidates=core.nearby(stations,center(),stations.length);if(!silent){places=[];render();say('Chargement des horaires de toutes les lignes…');}await departures(mine);
 }
 document.querySelectorAll('[data-radius]').forEach(button=>button.onclick=async()=>{if(!center()||!enabled)return;manualRadius=true;radius=Number(button.dataset.radius);if(!candidates.length){controls();return;}cancel();controller=new AbortController();places=[];render();say('Chargement des horaires dans le rayon choisi…');await departures(sequence);});
@@ -124,6 +168,6 @@ controls();
  document.addEventListener('visibilitychange',()=>{if(document.hidden){cancel();say('Consultation suspendue pendant votre absence.');}else if(enabled)start();});
  window.addEventListener('online',()=>{if(enabled&&!document.hidden)start(true);});
  window.addEventListener('pageshow',event=>{if(event.persisted&&enabled)start();});
- window.WenareOverview={resolveStop:call=>teleportCore.resolveStop(call,locations),refreshDepartures(){if(!enabled||!center()||!candidates.length)return;cancel(false);for(const row of results.values())row.refreshPending=true;loading=false;scanned=[];railScanned=[];controller=new AbortController();departures(sequence);},refreshDomain(){if(!enabled||!center()||!candidates.length)return;cancel(false);loading=false;scanned=[];railScanned=[];controller=new AbortController();render();departures(sequence);}};
+ window.WenareOverview={returnToPosition,resolveStop:call=>teleportCore.resolveStop(call,locations),refreshDepartures(){if(!enabled||!center()||!candidates.length)return;cancel(false);for(const row of results.values())row.refreshPending=true;loading=false;scanned=[];railScanned=[];controller=new AbortController();departures(sequence);},refreshDomain(){if(!enabled||!center()||!candidates.length)return;cancel(false);loading=false;scanned=[];railScanned=[];controller=new AbortController();render();departures(sequence);}};
  start();
 })();

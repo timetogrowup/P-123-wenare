@@ -101,3 +101,34 @@ test('the new shell caches all versioned scripts and styles referenced by the pa
   assert.ok(files.some(asset=>asset.startsWith('./'+name+'?v=')));
  }
 });
+
+test('the header distinguishes real position, immediate and fixed projection independently of loaded results',()=>{
+ const wall=Date.parse('2026-11-19T16:00:00Z');
+ const physical={status:'ready',position:{lat:48.9,lon:2.2,accuracy:20,timestamp:wall},location:{label:'l’arrêt « Argentine »',relation:'near'}};
+ const gps=teleport.presentation({mode:'gps'},physical,wall);
+ assert.equal(gps.situation,'Il est 17 h 00. Je suis près de l’arrêt « Argentine ».');
+ assert.equal(gps.exploration,false);
+ const state=teleport.createState();state.explore(defense);
+ assert.equal(teleport.presentation(state.read(),physical,wall).situation,'Il est 17 h 00. Je me projette à La Défense.');
+ assert.equal(teleport.presentation(state.read(),physical,wall).exploration,true);
+ state.explore({...defense,label:'place de l’Étoile'},wall+35*60000);
+ const projected=teleport.presentation(state.read(),physical,wall+60000);
+ assert.equal(projected.situation,'Il sera 17 h 35. Je serai place de l’Étoile.');
+ assert.equal(projected.question,'Qu’est-ce qui s’offrira à moi ?');
+ assert.equal(teleport.presentation(state.read(),physical,wall+36*60000).situation,'Projection à 17 h 35 : place de l’Étoile. Cette heure est passée.');
+ assert.equal(teleport.presentation(state.read(),physical,wall+36*60000).exploration,true);
+});
+
+test('the header never invents a real place or reuses stale fixes and formats midnight and DST in Paris',()=>{
+ const wall=Date.parse('2026-11-19T22:00:00Z'),gps={mode:'gps'};
+ const physical={status:'ready',position:{lat:-48.9,lon:-2.2,accuracy:20,timestamp:wall}};
+ assert.match(teleport.presentation(gps,physical,wall).situation,/48,9000° S, 2,2000° O/);
+ assert.match(teleport.presentation(gps,physical,wall+60001).situation,/position est indisponible/);
+ assert.match(teleport.presentation(gps,{status:'pending'},wall).situation,/Localisation en cours/);
+ const state=teleport.createState();state.explore({...defense,label:'Auber'},Date.parse('2026-11-19T23:15:00Z'));
+ assert.equal(teleport.presentation(state.read(),physical,wall).situation,'Le 20 novembre 2026, il sera 00 h 15. Je serai à Auber.');
+ assert.equal(teleport.clockText(Date.parse('2026-10-25T00:30Z')),'02 h 30');
+ assert.equal(teleport.clockText(Date.parse('2026-10-25T01:30Z')),'02 h 30');
+ assert.equal(teleport.clockText(Date.parse('2026-03-29T01:30Z')),'03 h 30');
+ assert.equal(teleport.locationText('<img onerror=alert(1)>'),'ici : <img onerror=alert(1)>');
+});
