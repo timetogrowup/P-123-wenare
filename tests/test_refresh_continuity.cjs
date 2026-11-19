@@ -2,7 +2,9 @@ const test=require('node:test'),assert=require('node:assert/strict'),vm=require(
 function setup(){
  const nodes=new Map(),node=id=>{if(!nodes.has(id))nodes.set(id,{textContent:'',classList:{toggle(){}},addEventListener(){},replaceChildren(){}});return nodes.get(id);};
  const window={dispatchEvent(){},addEventListener(){},WenareTimetable:{bundleVersion:'2026-11-08.18',loadMany:async()=>[]}};
- const context={window,document:{hidden:false,getElementById:node,querySelectorAll:()=>[],addEventListener(){}},WenareDepartures:{nearby:s=>s},WenareNearby:{validPosition:()=>true},localStorage:{getItem(){}},CustomEvent:class{},Event:class{},AbortController,Date,performance,setTimeout,clearTimeout,setInterval,clearInterval,navigator:{geolocation:{getCurrentPosition:ok=>ok({timestamp:Date.now(),coords:{}})}}};
+ const teleportation={read:()=>({mode:'gps',destination:null,at:null,revision:0}),button:()=>({dataset:{}}),explore(){}};
+ const teleportationCore={time:()=>'',fromPlace:()=>null};
+ const context={window,WenareTeleportationUI:teleportation,WenareTeleportation:teleportationCore,document:{hidden:false,getElementById:node,querySelectorAll:()=>[],addEventListener(){}},WenareDepartures:{nearby:s=>s},WenareNearby:{validPosition:()=>true},localStorage:{getItem(){}},CustomEvent:class{},Event:class{},AbortController,Date,performance,setTimeout,clearTimeout,setInterval,clearInterval,navigator:{geolocation:{getCurrentPosition:ok=>ok({timestamp:Date.now(),coords:{}})}}};
  const source=fs.readFileSync(require.resolve('../nearby-ui.js'),'utf8').replace(" start();",` window.test={init(row){sources={metro:{sha:'sha'}};controller=new AbortController();results=new Map([['key',row]]);lastFix={};candidates=[{}];},row:()=>results.get('key'),load:()=>loadQueries([{key:'key',lineId:'line',mode:'metro'}],sequence,[{services:[{key:'key',lineId:'line',mode:'metro'}]}]),refresh:async()=>{catalogues=async()=>[{}];departures=async()=>{};await start(true);}};`);
  context.WenareTimetable=window.WenareTimetable;vm.runInNewContext(source,context);return window;
 }
