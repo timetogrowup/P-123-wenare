@@ -8,9 +8,23 @@ const {chromium,webkit}=require('playwright'),fs=require('node:fs'),assert=requi
  page.on('pageerror',e=>errors.push(String(e)));await page.clock.install({time:now});
  await page.addInitScript(({lat,lon})=>{navigator.geolocation.getCurrentPosition=ok=>{window.gpsCalls=(window.gpsCalls||0)+1;ok({timestamp:Date.now(),coords:{latitude:lat,longitude:lon,accuracy:10}});};},{lat:point[2],lon:point[3]});
  await page.addInitScript(now=>{const original=window.fetch.bind(window);window.fetch=async(...args)=>{const response=await original(...args),input=args[0],url=new URL(typeof input==='string'?input:input.url,location.href);if(!url.pathname.includes('/distribution/'))return response;const headers=new Headers(response.headers);headers.set('date',new Date(now).toUTCString());headers.set('age','0');return new Response(response.body,{status:response.status,statusText:response.statusText,headers});};},now);
- async function ready(){await page.waitForFunction(()=>{const state=document.querySelector('#tripCallsDialog')?.dataset.state;return state&&state!=='loading';},null,{timeout:45000});assert.equal(await page.locator('#tripCallsDialog').getAttribute('data-state'),'ready',await page.locator('#tripCallsDialog').innerText());}
+ async function ready(destination){
+  try {
+   await page.waitForFunction(expected=>{
+    const dialog=document.querySelector('#tripCallsDialog');
+    const selected=dialog?.querySelector('#tripCallsDeparture');
+    return dialog?.open&&dialog.dataset.state==='ready'&&
+      (!expected||selected?.textContent.includes(expected))&&
+      !!dialog.querySelector('.trip-calls-origin')&&!!dialog.querySelector('.trip-calls-stop.is-terminus');
+   },destination,{timeout:45000,polling:50});
+  } catch(error) {
+   const dialog=page.locator('#tripCallsDialog');
+   throw new Error('Desserte non prête : '+await dialog.getAttribute('data-state')+
+     '\n'+await dialog.textContent()+'\nErreurs navigateur : '+errors.join(' | '),{cause:error});
+  }
+ }
  await page.goto(process.env.MMI_BASE_URL||'http://127.0.0.1:8765/');await page.getByRole('button',{name:/📍 Reine Blanche/}).click();
- const button=page.getByRole('button',{name:/Bus 6501 vers Maison des Insectes.*voir les arrêts/});await button.click();await ready();
+ const button=page.getByRole('button',{name:/Bus 6501 vers Maison des Insectes.*voir les arrêts/});await button.click();await ready('Maison des Insectes');
  const nextCount=await page.locator('.trip-calls-stop').count();assert.ok(nextCount>0);assert.match(await page.locator('.trip-calls-stop').last().innerText(),/Terminus/);assert.match(await page.locator('.trip-calls-stop').last().locator('.trip-calls-time').innerText(),/\d\d:\d\d/);assert.ok((await page.locator('.trip-calls-time').allTextContents()).every(s=>!/(Arrivée|départ)/i.test(s)));assert.equal(await page.evaluate(()=>window.gpsCalls),1);
  const contrasts=await page.evaluate(()=>{const original=WenareThemes.current?.()||document.documentElement.dataset.wenareStyle;const result=[];const light=c=>{const rgb=c.match(/[\d.]+/g).slice(0,3).map(Number).map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4;});return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;};for(const theme of WenareThemes.list){WenareThemes.select(theme.id);const d=getComputedStyle(document.querySelector('#tripCallsDialog')),h=getComputedStyle(document.querySelector('#tripCallsTitle')),bg=light(d.backgroundColor);result.push({theme:theme.id,title:(Math.max(light(h.color),bg)+.05)/(Math.min(light(h.color),bg)+.05),body:(Math.max(light(d.color),bg)+.05)/(Math.min(light(d.color),bg)+.05)});}WenareThemes.select(original);return result;});for(const c of contrasts){assert.ok(c.title>=4.5,JSON.stringify(c));assert.ok(c.body>=4.5,JSON.stringify(c));}
  const first=await page.locator('.trip-calls-origin').innerText();await page.locator('#tripCallsDeparture').click();const picker=page.locator('#tripCallsPicker');assert.equal(await picker.isVisible(),true);const entries=picker.locator('.trip-calls-option');const next=await entries.evaluateAll(rows=>rows.findIndex(row=>row.textContent.includes('Prochain départ')));assert.ok(next>=0&&next<=3);assert.ok(await entries.count()<=next+11);await entries.nth(next+1).click();await ready();assert.notEqual(await page.locator('.trip-calls-origin').innerText(),first);
@@ -21,6 +35,6 @@ const {chromium,webkit}=require('playwright'),fs=require('node:fs'),assert=requi
  await page.waitForFunction(()=>document.activeElement.classList.contains('trip-calls-trigger'),null,{timeout:5000,polling:50});
  assert.equal(await page.evaluate(()=>document.activeElement.classList.contains('trip-calls-trigger')),true);
  await page.clock.runFor(1100);assert.equal(await page.evaluate(()=>document.activeElement.classList.contains('trip-calls-trigger')),true);
- await page.getByRole('button',{name:/Bus 6501 vers Gare de Saint-Germain.*voir les arrêts/}).click();await ready();assert.match(await page.locator('.trip-calls-stop').last().innerText(),/Gare de Saint-Germain-en-Laye/);await page.keyboard.press('Escape');assert.equal(await page.locator('#tripCallsDialog').isVisible(),false);
+ await page.getByRole('button',{name:/Bus 6501 vers Gare de Saint-Germain.*voir les arrêts/}).click();await ready('Gare de Saint-Germain');assert.match(await page.locator('.trip-calls-stop').last().innerText(),/Gare de Saint-Germain-en-Laye/);await page.keyboard.press('Escape');assert.equal(await page.locator('#tripCallsDialog').isVisible(),false);
  assert.deepEqual(errors,[]);console.log(name+' TRIP_CALLS_BROWSER_OK: two senses, next/following, terminal arrival, pinned modal, no GPS, focus, Escape, 320px');await context.close();
  }finally{await browser.close();}})().catch(e=>{console.error(e);process.exit(1);});
