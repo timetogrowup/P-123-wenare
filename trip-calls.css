@@ -7,8 +7,6 @@
 .trip-calls-dialog button{min-height:44px;cursor:pointer;font:inherit}
 .trip-calls-close{flex-shrink:0;padding:8px 12px}
 .trip-calls-description,.trip-calls-status,.trip-calls-content,.trip-calls-actions{margin:16px 20px}
-.trip-calls-select-label{display:block;margin:16px 20px 6px;font-weight:650}
-.trip-calls-dialog select{box-sizing:border-box;display:block;width:calc(100% - 40px);max-width:100%;min-height:48px;margin:0 20px;padding:10px;font:inherit;color:inherit;background:var(--wenare-surface,#fff);border:1px solid var(--wenare-border,#aaa);border-radius:8px}
 .trip-calls-status{line-height:1.5;font-size:.95rem}
 .trip-calls-origin{display:flex;flex-direction:column;gap:8px;padding:16px;background:var(--wenare-card,var(--wenare-surface,#fff));border:2px solid var(--wenare-accent,#9c2567);border-radius:12px}
 .trip-calls-list{list-style:none;padding:0 0 0 16px;margin:22px 0}
@@ -21,3 +19,12 @@
 .trip-calls-actions{display:flex;flex-wrap:wrap;gap:10px}
 .trip-calls-actions[hidden]{display:none}
 @media(max-width:420px){.trip-calls-dialog{width:calc(100vw - 12px);max-height:95dvh}.trip-calls-dialog .trip-calls-header{padding:14px}.trip-calls-description,.trip-calls-status,.trip-calls-content,.trip-calls-actions{margin-left:14px;margin-right:14px}}
+
+.trip-calls-picker-trigger{display:block;width:calc(100% - 28px);margin:12px auto;padding:10px;text-align:left}
+.trip-calls-picker{width:min(500px,calc(100vw - 24px));overflow:hidden}
+.trip-calls-options{display:grid;gap:8px;padding:14px;max-height:55dvh;overflow:auto;overscroll-behavior:contain}
+.trip-calls-option{display:grid;gap:4px;padding:10px;text-align:left;border:1px solid var(--wenare-border,#aaa);border-radius:var(--style-radius,12px);color:inherit;background:var(--wenare-card,var(--wenare-surface,#fff));white-space:normal;overflow-wrap:anywhere}
+.trip-calls-option[aria-current=true]{border:2px solid var(--wenare-accent,#9c2567)}
+.trip-calls-stop-line{display:block}
+.trip-calls-stop{padding-bottom:14px}
+.trip-calls-stop:last-child{padding-bottom:0}

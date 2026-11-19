@@ -15,8 +15,10 @@ function cancel(clear=true){sequence++;controller?.abort();controller=null;clear
 function fallback(text){enabled=false;say(text);}
 function element(tag,text,className){const e=document.createElement(tag);if(text!==undefined)e.textContent=text;if(className)e.className=className;return e;}
 function groupsFor(place,wall=Date.now(),mono=performance.now()){
- const observations=[];for(const service of place.services){const row=results.get(service.key);if(!row)continue;if(row.error){dataIssues=true;continue;}const now=row.clock.server+mono-row.clock.mono;if(Math.abs((wall-row.clock.wall)-(mono-row.clock.mono))>30000||now>=Date.parse(row.response.validUntilUtc)){dataIssues=true;continue;}for(const event of row.response.departures){const view=core.presentation(event,now);if(logic.imminent(view,now))observations.push({service,event,view});}}
- return logic.directionGroups(observations);
+ const observations=[],choices=[];for(const service of place.services){const row=results.get(service.key);if(!row)continue;if(row.error){dataIssues=true;continue;}const now=row.clock.server+mono-row.clock.mono;if(Math.abs((wall-row.clock.wall)-(mono-row.clock.mono))>30000||now>=Date.parse(row.response.validUntilUtc)){dataIssues=true;continue;}choices.push(...(row.response.tripChoices||[]));for(const event of row.response.departures){const view=core.presentation(event,now);if(logic.imminent(view,now))observations.push({service,event,view});}}
+ return logic.directionGroups(observations).map(group=>({...group,tripChoices:choices.filter(event=>
+  event.lineId===group.lineId&&(event.gtfsDirectionId??null)===group.gtfsDirectionId&&
+  (group.gtfsDirectionId!==null||event.directionId===group.events[0].event.directionId))}));
 }
 function select(){dataIssues=false;const wall=Date.now(),mono=performance.now(),all=[...new Map([...railScanned,...scanned].map(p=>[p.id,p])).values()],groups=new Map(all.map(p=>[p.id,groupsFor(p,wall,mono)])),sections=logic.selectSections(scanned,groups,railScanned);places=sections.primary;railPlaces=sections.rail;}
 function render(){
