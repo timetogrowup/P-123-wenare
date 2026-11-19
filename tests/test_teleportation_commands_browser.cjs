@@ -77,7 +77,9 @@ const name=process.env.MMI_BROWSER||'chromium';
   assert.equal(await page.evaluate(()=>WenareTeleportationUI.read().at),null);
   assert.equal(await page.evaluate(()=>WenareTeleportationUI.read().destination.label),'Maison');
   await page.evaluate(()=>{window.pendingGPS=[];navigator.geolocation.getCurrentPosition=(ok,error,options)=>pendingGPS.push({ok,error,options});});
-  await page.locator('#returnToPosition').click();await page.locator('#returnToPosition').click();
+  await page.locator('#returnToPosition').click();
+  // Send a repeated pointer input while aria-disabled; the application guard must ignore it.
+  await page.locator('#returnToPosition').click({force:true});
   assert.equal(await page.evaluate(()=>pendingGPS.length),1);
   assert.equal(await page.locator('#returnToPosition').getAttribute('aria-disabled'),'true');
   await page.evaluate(()=>pendingGPS[0].error({code:1}));
