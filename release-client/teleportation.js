@@ -65,15 +65,35 @@
    try{storage().setItem(key,JSON.stringify(rows));persistent=true;}catch{persistent=false;}
    return persistent;
   };
+  const result=(status,favorite,persistence='unchanged')=>({status,persistence,...(favorite?{favorite:{...favorite}}:{})});
+  function name(value){
+   if(typeof value!=='string')return null;
+   const label=value.trim().replace(/\s+/g,' ');
+   if(!label||label.length>140||normalizeLabel(label).label!==label)return null;
+   return label;
+  }
+  function create(value){
+   const label=name(value?.label),point=label&&destination({...value,label});
+   if(!point)return result('invalid');
+   const existing=rows.find(row=>same(row,point));
+   if(existing)return result('duplicate',existing);
+   const row={...point,id:JSON.stringify([point.lat,point.lon,point.stationId])};
+   rows.push(row);return result('created',row,save()?'stored':'session');
+  }
+  function rename(id,value){
+   const label=name(value);if(!label)return result('invalid');
+   const index=rows.findIndex(row=>row.id===id);if(index<0)return result('not-found');
+   rows[index]={...rows[index],label,labelKind:'named'};
+   return result('renamed',rows[index],save()?'stored':'session');
+  }
+  function remove(id){
+   const point=rows.find(row=>row.id===id);if(!point)return result('not-found');
+   rows=rows.filter(row=>row.id!==id);return result('removed',point,save()?'stored':'session');
+  }
   return {
-   read:()=>rows.map(row=>({...row})),
-   add(value){
-    const point=destination(value);
-    if(!point)return false;
-    if(!rows.some(row=>same(row,point)))rows.push({...point,id:JSON.stringify([point.lat,point.lon,point.stationId])});
-    return save();
-   },
-   remove(id){rows=rows.filter(row=>row.id!==id);return save();},
+   read:()=>rows.map(row=>({...row})),create,rename,delete:remove,
+   add(value){const r=create(value);return r.status==='duplicate'?persistent:r.status==='created'&&r.persistence==='stored';},
+   remove(id){const r=remove(id);return r.status==='removed'&&r.persistence==='stored';},
    persistent:()=>persistent
   };
  }

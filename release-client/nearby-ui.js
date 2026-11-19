@@ -37,16 +37,16 @@ async function physicalPosition(reuse=true){
   if(!navigator.geolocation){reject({code:2});return;}
   const timeout=setTimeout(()=>reject({code:3}),15000);
   const done=fn=>value=>{clearTimeout(timeout);fn(value);};
-  try{navigator.geolocation.getCurrentPosition(done(resolve),done(reject),{enableHighAccuracy:true,timeout:15000,maximumAge:15000});}
+  try{navigator.geolocation.getCurrentPosition(done(resolve),done(reject),{enableHighAccuracy:true,timeout:15000,maximumAge:reuse?15000:0});}
   catch(error){clearTimeout(timeout);reject(error);}
  });
  if(!logic.validPosition(position?.coords,position?.timestamp))throw {code:2};
  return {position,requestId};
 }
-async function returnToPosition(){
+async function returnToPosition({fresh=false}={}){
  const revision=teleport.read().revision;
  try{
-  const {position,requestId}=await physicalPosition();
+  const {position,requestId}=await physicalPosition(!fresh);
   if(requestId!==physicalRequest||teleport.read().revision!==revision)return false;
   acceptPhysical(position);return true;
  }catch(error){

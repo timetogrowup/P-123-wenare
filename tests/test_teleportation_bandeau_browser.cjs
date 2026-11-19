@@ -3,7 +3,7 @@ const fs=require('node:fs');
 const {chromium,webkit}=require('playwright');
 const {fixture,now,defense,auber,origin}=require('./test_teleportation_browser.cjs');
 const browserName=process.env.MMI_BROWSER||'chromium';
-const targets=['#wenareLogoSignal','#wenareNameSignal'];
+const targets=['#wenareLogoSignal .wenare-mark','#wenareNameSignal'];
 
 async function assertMotion(page,active){
  for(const selector of targets){
@@ -45,7 +45,7 @@ async function assertMotion(page,active){
   await page.locator('[data-domain="food"]').count().then(async n=>{if(n)await page.locator('[data-domain="food"]').click();});
   for(const theme of ['pop','funk','reggae','rock','jazz','electro','bossa','soul','folk','lofi','ambient','swing']){
    await page.evaluate(theme=>WenareThemes.select(theme),theme);
-   assert.equal(await page.locator('#wenareLogoSignal').evaluate(e=>getComputedStyle(e).animationPlayState),'running');
+   assert.equal(await page.locator('#wenareLogoSignal .wenare-mark').evaluate(e=>getComputedStyle(e).animationPlayState),'running');
   }
   await assertMotion(page,true);
 
@@ -53,23 +53,23 @@ async function assertMotion(page,active){
   await page.locator('#wenareProjectionStatus').waitFor({state:'visible'});
   await page.emulateMedia({reducedMotion:'no-preference'});await assertMotion(page,true);
   await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,get:()=>true});document.dispatchEvent(new Event('visibilitychange'));});
-  assert.equal(await page.locator('#wenareLogoSignal').evaluate(e=>getComputedStyle(e).animationPlayState),'paused');
+  assert.equal(await page.locator('#wenareLogoSignal .wenare-mark').evaluate(e=>getComputedStyle(e).animationPlayState),'paused');
   await page.evaluate(()=>{delete document.hidden;document.dispatchEvent(new Event('visibilitychange'));});
   await assertMotion(page,true);
 
   // The original correction has expired. A pending return must preserve projection.
   await page.evaluate(()=>{window.pendingGPS=[];navigator.geolocation.getCurrentPosition=(ok,error)=>pendingGPS.push({ok,error});});
-  await page.locator('#teleportBanner [data-return-position]').click();
+  await page.locator('#returnToPosition').click();
   await page.waitForFunction(()=>pendingGPS.length===1);
-  assert.equal(await page.locator('#teleportBanner [data-return-position]').isDisabled(),true);
+  assert.equal(await page.locator('#returnToPosition').getAttribute('aria-disabled'),'true');
   assert.equal(await page.evaluate(()=>WenareTeleportationUI.read().mode),'exploration');
   await assertMotion(page,true);
   await page.evaluate(()=>pendingGPS[0].error({code:1}));
-  await page.waitForFunction(()=>!document.querySelector('#teleportBanner [data-return-position]').disabled);
-  assert.match(await page.locator('#teleportBanner').innerText(),/Autorisez la localisation/);
+  await page.waitForFunction(()=>!document.querySelector('#returnToPosition').disabled);
+  assert.match(await page.locator('#wenareCommandFeedback').innerText(),/Autorisez la localisation/);
   assert.equal(await page.evaluate(()=>WenareTeleportationUI.read().mode),'exploration');
 
-  await page.locator('#teleportBanner [data-return-position]').click();
+  await page.locator('#returnToPosition').click();
   await page.waitForFunction(()=>pendingGPS.length===2);
   await page.evaluate(auber=>WenareTeleportationUI.explore({...auber,label:'Auber'}),auber);
   await page.evaluate(origin=>pendingGPS[1].ok({timestamp:Date.now(),coords:{latitude:origin.lat,longitude:origin.lon,accuracy:10}}),origin);
@@ -78,7 +78,7 @@ async function assertMotion(page,active){
   assert.match(await page.locator('#wenareSituation').innerText(),/Je me projette à Auber/);
   await assertMotion(page,true);
 
-  await page.locator('#teleportBanner [data-return-position]').click();
+  await page.locator('#returnToPosition').click();
   await page.waitForFunction(()=>pendingGPS.length===3);
   await page.evaluate(origin=>pendingGPS[2].ok({timestamp:Date.now(),coords:{latitude:origin.lat,longitude:origin.lon,accuracy:10}}),origin);
   await page.waitForFunction(()=>WenareTeleportationUI.read().mode==='gps');
@@ -93,7 +93,7 @@ async function assertMotion(page,active){
   for(const width of [320,360,390]){
    await page.setViewportSize({width,height:844});
    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true,'width '+width);
-   for(const id of ['openSettings','openTeleportation']){
+   for(const id of ['openSettings','openHabitualPlaces','returnToPosition']){
     const b=await page.locator('#'+id).boundingBox();assert.ok(b.width>=44&&b.height>=44);
    }
   }

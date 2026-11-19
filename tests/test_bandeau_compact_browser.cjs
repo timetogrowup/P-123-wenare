@@ -37,7 +37,7 @@ async function colors(page){
   fs.mkdirSync(proofs,{recursive:true});
   const evidence={browser:browserName,baseline:baseline.sourceCommit,measurements:{},themes:{},widths:{}};
   const previous=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block',reducedMotion:'reduce'});
-  const old=await fixture(previous,false,{'index.html':baseline.indexHtml,'teleportation.css':baseline.teleportationCss});
+  const old=await fixture(previous,false,{'index.html':baseline.indexHtml,'teleportation.css':baseline.teleportationCss,'teleportation.js':baseline.teleportationJs,'teleportation-ui.js':baseline.teleportationUiJs,'places-map-ui.js':baseline.placesMapUiJs});
   await old.page.waitForFunction(()=>document.querySelector('#wenareSituation').textContent.includes('près de'));
   await old.page.evaluate(()=>WenareThemes.select('pop'));
   evidence.measurements.oldGPS=await measure(old.page);
@@ -83,7 +83,7 @@ async function colors(page){
     const r=await measure(page);assert.ok(Math.abs(r.top)<=1,'header top at '+width+' / '+y);
     assert.ok(r.bottom<844&&r.scrollWidth<=r.viewport,'bounded header without horizontal overflow');
    }
-   for(const id of ['openSettings','openTeleportation']){
+   for(const id of ['openSettings','openHabitualPlaces','returnToPosition']){
     const b=await page.locator('#'+id).boundingBox();assert.ok(b.width>=44&&b.height>=44);
    }
    evidence.widths[width]=await measure(page);
@@ -97,12 +97,13 @@ async function colors(page){
   await page.screenshot({path:proofs+'/'+browserName+'-compact-projection.png'});
 
   // A legacy coordinate favorite is visible as a human label, yet keeps its point and id.
-  await page.locator('#openTeleportation').click();
+  await page.locator('#openHabitualPlaces').click();
   await page.getByRole('button',{name:'Point sélectionné sur la carte',exact:true}).click();
+  await page.waitForFunction(()=>WenareTeleportationUI.read().destination?.labelKind==='map-point');
   assert.equal(await page.evaluate(()=>WenareTeleportationUI.read().destination.labelKind),'map-point');
   assert.match(await page.locator('#wenareSituation').innerText(),/au point sélectionné sur la carte/);
   assert.doesNotMatch(await page.locator('#wenareSituation').innerText(),/48[.,]865|2[.,]321/);
-  await page.locator('#teleportBanner [data-return-position]').click();
+  await page.locator('#returnToPosition').click();
   await page.waitForFunction(()=>WenareTeleportationUI.read().mode==='gps');
   assert.equal(await page.locator('#wenareHeader').getAttribute('data-teleportation'),'false');
   assert.notEqual((await colors(page)).background,'rgb(11, 16, 32)','active normal theme restored');
@@ -137,3 +138,4 @@ async function colors(page){
   await context.close();
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
+
