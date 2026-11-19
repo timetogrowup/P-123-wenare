@@ -1,11 +1,11 @@
 const test=require('node:test'),assert=require('node:assert/strict'),vm=require('node:vm'),fs=require('node:fs');
 function setup(){
  const nodes=new Map(),node=id=>{if(!nodes.has(id))nodes.set(id,{textContent:'',classList:{toggle(){}},addEventListener(){},replaceChildren(){}});return nodes.get(id);};
- const window={dispatchEvent(){},addEventListener(){},WenareTimetable:{bundleVersion:'2026-11-08.18',loadMany:async()=>[]}};
+ const window={dispatchEvent(){},addEventListener(){},WenareTimetable:{bundleVersion:'2026-11-08.18',projectionVersion:1,loadMany:async()=>[]}};
  const teleportation={read:()=>({mode:'gps',destination:null,at:null,revision:0}),button:()=>({dataset:{}}),explore(){}};
  const teleportationCore={time:()=>'',fromPlace:()=>null};
  const context={window,WenareTeleportationUI:teleportation,WenareTeleportation:teleportationCore,document:{hidden:false,getElementById:node,querySelectorAll:()=>[],addEventListener(){}},WenareDepartures:{nearby:s=>s},WenareNearby:{validPosition:()=>true},localStorage:{getItem(){}},CustomEvent:class{},Event:class{},AbortController,Date,performance,setTimeout,clearTimeout,setInterval,clearInterval,navigator:{geolocation:{getCurrentPosition:ok=>ok({timestamp:Date.now(),coords:{}})}}};
- const source=fs.readFileSync(require.resolve('../nearby-ui.js'),'utf8').replace(" start();",` window.test={init(row){sources={metro:{sha:'sha'}};controller=new AbortController();results=new Map([['key',row]]);lastFix={};candidates=[{}];},row:()=>results.get('key'),load:()=>loadQueries([{key:'key',lineId:'line',mode:'metro'}],sequence,[{services:[{key:'key',lineId:'line',mode:'metro'}]}]),refresh:async()=>{catalogues=async()=>[{}];departures=async()=>{};await start(true);}};`);
+ const source=fs.readFileSync(require.resolve('../nearby-ui.js'),'utf8').replace(" start();",` window.test={init(row){sources={metro:{sha:'sha'}};controller=new AbortController();results=new Map([['key',row]]);lastFix={timestamp:Date.now(),coords:{latitude:48.85,longitude:2.35,accuracy:10}};candidates=[{}];},row:()=>results.get('key'),load:()=>loadQueries([{key:'key',lineId:'line',mode:'metro'}],sequence,[{services:[{key:'key',lineId:'line',mode:'metro'}]}]),refresh:async()=>{catalogues=async()=>[{}];departures=async()=>{};await start(true);}};`);
  context.WenareTimetable=window.WenareTimetable;vm.runInNewContext(source,context);return window;
 }
 test('silent refresh preserves rows while requesting their replacement',async()=>{const w=setup(),row={response:{serverTimeUtc:new Date().toISOString()},clock:{},refreshPending:false};w.test.init(row);await w.test.refresh();assert.equal(w.test.row(),row);assert.equal(row.refreshPending,true);});
