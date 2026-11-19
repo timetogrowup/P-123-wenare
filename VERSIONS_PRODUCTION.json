@@ -1,0 +1,13 @@
+[
+  {
+    "version": 1,
+    "date_releve_utc": "2026-11-19T06:49:50Z",
+    "commit": "abac0162f721621edc13bb554380bf39065e2a79",
+    "tag": "production-v000001",
+    "deploiement": "https://github.com/timetogrowup/P-123-wenare/actions/runs/44469445219",
+    "releve": "https://github.com/timetogrowup/P-123-wenare/actions/runs/44474935128",
+    "empreinte": "f9c8e191b38a7ed867ab768f1c4b779cfc2e30f1a71bd26cdd4c149c7a9f2ac1",
+    "inventaire": "inventaires/v000001.json",
+    "fichiers": 15029
+  }
+]
