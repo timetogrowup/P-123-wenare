@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   push:
     branches: [main]
-    paths: ['scripts/**', 'tests/**', 'monitoring/validate_transport_reserve.py', '.github/workflows/refresh-bus-idf-public.yml']
+    paths: ['scripts/**', 'tests/**', 'release-client/**', 'monitoring/validate_transport_reserve.py', '.github/workflows/refresh-bus-idf-public.yml']
   schedule:
     - cron: '17 5 * * *'
 permissions:
@@ -63,9 +63,10 @@ jobs:
           node tests/test_network.cjs
           node tests/test_journey.cjs
           node tests/test_replay.cjs
-          node --test tests/test_departures.cjs tests/test_timetable.cjs tests/test_mobility.cjs tests/test_nearby.cjs tests/test_transport_modes.cjs tests/test_line_colours.cjs tests/test_trip_calls.cjs
+          node --test tests/test_departures.cjs tests/test_timetable.cjs tests/test_mobility.cjs tests/test_nearby.cjs tests/test_transport_modes.cjs tests/test_line_colours.cjs tests/test_trip_calls.cjs tests/test_teleportation.cjs
           node tests/test_trip_calls_real.cjs
-      - name: Recette des dessertes sur Chromium et WebKit
+          node tests/test_teleportation_real.cjs
+      - name: Recette des dessertes et de Téléportation sur Chromium et WebKit
         timeout-minutes: 10
         run: |
           # Keep Ubuntu signature checks; use the official HTTPS archive.
@@ -80,6 +81,8 @@ jobs:
           trap 'kill "$SERVER_PID"' EXIT
           node tests/test_trip_calls_browser.cjs
           MMI_BROWSER=webkit node tests/test_trip_calls_browser.cjs
+          node tests/test_teleportation_browser.cjs
+          MMI_BROWSER=webkit node tests/test_teleportation_browser.cjs
       - name: Résumer la qualification sans service d'archivage
         run: |
           echo '## Qualification des horaires' >> "$GITHUB_STEP_SUMMARY"
@@ -91,6 +94,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add distribution/
           git add index.html nearby-ui.js timetable.js sw.js trip-calls-core.js trip-calls-loader.js trip-calls-ui.js trip-calls.css
+          git add teleportation.js teleportation-ui.js teleportation.css places-map-ui.js opportunities-ui.js
           if ! git diff --cached --quiet; then
             git commit -m "data: actualiser les horaires qualifiés de tous les bus IDFM"
             git pull --rebase origin main

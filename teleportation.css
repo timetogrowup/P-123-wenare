@@ -1,0 +1,36 @@
+.teleport-button {
+  display: inline-grid;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 5px;
+  place-items: center;
+  vertical-align: middle;
+}
+.teleport-button svg { width: 34px; height: 34px; }
+.teleport-banner {
+  border: 1px solid var(--wenare-accent, #1659aa);
+  border-radius: 12px;
+  margin: 10px 0;
+  padding: 10px 12px;
+  overflow-wrap: anywhere;
+}
+.teleport-banner[hidden], .teleport-actions[hidden], .teleport-actions button[hidden] { display: none; }
+.teleport-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-block: 8px; }
+.teleport-feedback:empty { display: none; }
+.teleport-options { padding: 12px 16px; overflow: auto; }
+.teleport-options p { margin: 0 0 8px; }
+.teleport-dialog { max-height: min(85dvh, 620px); }
+.teleport-effect {
+  position: fixed;
+  z-index: 9999;
+  top: 50%;
+  left: 50%;
+  width: 104px;
+  color: #fff;
+  filter: drop-shadow(0 0 14px #48c9e7) drop-shadow(0 0 6px #b58dff);
+  opacity: 0;
+  pointer-events: none;
+}
+.teleport-exploration-pin { color: #743dd2; }
+.trip-calls-stop .teleport-button { align-self: flex-start; margin-top: 5px; }
+@media (prefers-reduced-motion: reduce) { .teleport-effect { display: none; } }
