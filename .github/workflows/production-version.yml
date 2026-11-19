@@ -1,0 +1,31 @@
+name: Relever la version WENARE en production
+on:
+  schedule:
+    - cron: '11 4 * * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/production-version.yml', '.github/record_production_version.py']
+permissions:
+  contents: write
+  actions: read
+concurrency:
+  group: wenare-production-version
+  cancel-in-progress: false
+jobs:
+  record:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Relever et conserver le déploiement Pages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          python3 .github/record_production_version.py \
+            --repo "$GITHUB_REPOSITORY" \
+            --site "https://timetogrowup.github.io/P-123-wenare/" \
+            --date "$(date -u +%FT%TZ)" \
+            --run-url "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
