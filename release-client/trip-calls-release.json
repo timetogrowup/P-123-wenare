@@ -1,13 +1,18 @@
 {
-  "version": 1,
+  "version": 2,
   "files": {
-    "index.html": "a5ea988da2d29d3db006ea1708b27f4350c479c88f48f84f2aadf4b3ac39824b",
-    "nearby-ui.js": "a06d75297cf9a0b4b2e72508ddcd06699bfbe7dbb8faaf265ad47cbcb36e5cee",
-    "timetable.js": "fa8d250059c8a9c3c10072c5434560bd007c1495148d0bff6f9afd9e879aaab3",
-    "sw.js": "6de6a1a45b3240486cd6c38685e546e140aa6dead06c8745f16d0ef26aee0fc4",
+    "index.html": "622fcee52acb174a1393b61258ba12203e64ce109ca59f8945a57edd457044e9",
+    "nearby-ui.js": "ed21b9e782e366d515841eaf803299e3e0892c3f351db3e7a6271de1d603c908",
+    "timetable.js": "ae404daa9cb696b0238fc9278a268f30dbb3dc2db58ae62a2cfee87beaf6207a",
+    "sw.js": "c064f9bcac7a99086c110782eb6ebfbf2829ebc202de4ac2e3101353e37007d9",
     "trip-calls-core.js": "59f505f5eaac8950bee7c0f23f0b2731c1b9faf21ac2ca9d5d1a933b7fc77f46",
     "trip-calls-loader.js": "ed675aeec5a20b37f0f74d251277d83cd9d4196ca3900136d912c5abdead8c41",
-    "trip-calls-ui.js": "22d7a02c98434f34bcfe331ab4b6a36eba3f22b78785a5bb14ef8db48ac7e55e",
-    "trip-calls.css": "3120c1bac11603e12ad2b86753bc7b5afabafb6cda7c7a45e66a7ef6587252e3"
+    "trip-calls-ui.js": "46be8029c0a2c365aa76f689a8f10ba01a602116bda55965e098ef0f9844309c",
+    "trip-calls.css": "3120c1bac11603e12ad2b86753bc7b5afabafb6cda7c7a45e66a7ef6587252e3",
+    "teleportation.js": "65aedfaec023128ca3113e46f5592739b305c68ae9b0a76af7109bc08ac95aa1",
+    "teleportation-ui.js": "f668996fb7e4a5f72121e8c61ae9a6884d4860965320ddb3c148d8f9093dadd5",
+    "teleportation.css": "c583d7983f5938ff91c4b302fb565ff5d0e92b188d187cf77116e66d0616febd",
+    "places-map-ui.js": "e7e323a836bbf26adb81f42393cb54301e88c043c83419f8ebab41f91107c1ac",
+    "opportunities-ui.js": "e9ee1a0d2af433d09fac8e873fc7e2b88f887a0aec45c98f3d3d9a7d5d1bd3f8"
   }
 }

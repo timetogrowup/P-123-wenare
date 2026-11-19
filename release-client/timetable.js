@@ -6,7 +6,61 @@ async function stored(id){const db=await open();try{return await new Promise((re
 async function save(id,value){const db=await open();try{await new Promise((resolve,reject)=>{const t=db.transaction('lines','readwrite');t.objectStore('lines').put(value,id);t.oncomplete=resolve;t.onerror=()=>reject(t.error);t.onabort=()=>reject(t.error||new Error('Stockage interrompu'))})}finally{db.close()}}
 async function validate(bytes,manifest,lineId,networkSha){const file=manifest.lines?.[lineId];if(![1,2].includes(manifest.schemaVersion)||manifest.quality!=='timetable'||manifest.networkSha256!==networkSha||!file||bytes.byteLength!==file.bytes||bytes.byteLength>8000000)throw new Error('Horaires incompatibles');const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))).map(x=>x.toString(16).padStart(2,'0')).join('');if(digest!==file.sha256)throw new Error('Horaires corrompus');const data=JSON.parse(new TextDecoder().decode(bytes));if(data.schemaVersion!==manifest.schemaVersion||data.lineId!==lineId||data.validFromUtc!==manifest.validFromUtc||data.validUntilUtc!==manifest.validUntilUtc||!data.groups)throw new Error('Horaires incomplets');if(manifest.directionVersion===1&&data.directionVersion!==1)throw new Error('Sens GTFS absents');if(data.directionVersion===1){if(!data.tripDirections||typeof data.tripDirections!=='object'||Object.values(data.tripDirections).some(d=>d!==null&&d!=='0'&&d!=='1'))throw new Error('Sens GTFS invalides');const refs=new Set(Object.values(data.groups).flatMap(rows=>rows.map(row=>row[2])));if(refs.size!==Object.keys(data.tripDirections).length||[...refs].some(ref=>!Object.hasOwn(data.tripDirections,ref)))throw new Error('Sens GTFS incomplets');}for(const [key,rows] of Object.entries(data.groups)){const [stop,line,direction]=JSON.parse(key);if(!stop||!direction||line!==lineId||!Array.isArray(rows))throw new Error('Service incorrect');let last=0;for(const row of rows){if(!Array.isArray(row)||(data.schemaVersion===2&&(row.length!==6||typeof row[4]!=='string'||!Number.isSafeInteger(row[5])||row[5]<=row[3]))||!Number.isInteger(row[0])||row[0]<last||!/^\d{4}-\d\d-\d\d$/.test(row[1])||typeof row[2]!=='string'||!Number.isSafeInteger(row[3]))throw new Error('Horaire incorrect');last=row[0];}}return data;}
 function binding(manifest,line){return manifest?.tripCallsManifest&&manifest.generationId===manifest.tripCallsManifest.generationId?{generationId:manifest.generationId,manifest:manifest.tripCallsManifest,networkSha256:manifest.networkSha256,timetablePackageSha256:manifest.lines[line].sha256}:null;}
-function response(data,query,now,groupByNextStop=false,tripCalls=null,clockSource='device'){if(!(Date.parse(data.validFromUtc)<=now&&now<Date.parse(data.validUntilUtc)))throw new Error('Horaires théoriques expirés. Actualisez les données.');const rows=data.groups[JSON.stringify([query.stopId,query.lineId,query.directionId])];if(!rows)throw new Error('Horaires théoriques non disponibles pour ce service.');if(groupByNextStop&&data.schemaVersion!==2)throw new Error('Actualisez les horaires pour regrouper les sens de départ.');let future=rows.filter(row=>row[0]*1000>now);if(groupByNextStop){const counts=new Map(),seen=new Set();future=future.filter(row=>{const id=JSON.stringify([row[1],row[2],row[5]]),key=JSON.stringify([row[4],data.tripDirections?.[row[2]]??null]),n=counts.get(key)||0;if(seen.has(id)||n>=3)return false;seen.add(id);counts.set(key,n+1);return true;});}else future=future.slice(0,3);const toEvent=row=>({id:JSON.stringify(row),stopId:query.stopId,lineId:query.lineId,directionId:query.directionId,destinationName:query.destinationName,tripRef:row[2],gtfsDirectionId:data.tripDirections?.[row[2]]??null,directionSource:data.directionVersion===1?'GTFS direction_id':'unavailable',stopSequence:row[3],nextStopId:row[4]||null,nextStopSequence:row[5]??null,mode:query.mode||'metro',serviceDate:row[1],scheduledTimeUtc:new Date(row[0]*1000).toISOString(),expectedTimeUtc:null,sourceRecordedAtUtc:null,quality:'timetable',status:'scheduled',source:'Île-de-France Mobilités — GTFS',...(tripCalls?{tripCalls,clockAnchor:{server:now,mono:performance.now()},clockSource}:{})});const departures=future.map(toEvent);const tripChoices=[];if(groupByNextStop&&tripCalls){const byDirection=new Map();for(const row of rows){const instant=row[0]*1000;if(instant<Date.parse(data.validFromUtc)||instant>=Date.parse(data.validUntilUtc))continue;const key=data.tripDirections?.[row[2]]??null;if(!byDirection.has(key))byDirection.set(key,{past:[],future:[],seen:new Set()});const list=byDirection.get(key),id=JSON.stringify([row[1],row[2],row[5]]);if(list.seen.has(id))continue;list.seen.add(id);if(instant<=now){list.past.push(row);if(list.past.length>3)list.past.shift();}else if(list.future.length<11)list.future.push(row);}for(const list of byDirection.values())tripChoices.push(...list.past.map(toEvent),...list.future.map(toEvent));}return {schemaVersion:1,serverTimeUtc:new Date(now).toISOString(),query:{stopId:query.stopId,lineId:query.lineId,directionId:query.directionId},coverage:{status:'unknown',provider:'Île-de-France Mobilités — GTFS (théorique)'},serviceStatus:departures.length?'partial':'none_announced',departures,tripChoices,nextRefreshAfterSeconds:60,validUntilUtc:data.validUntilUtc};}
+function response(data,query,now,groupByNextStop=false,tripCalls=null,clockSource='device',{consultationTime=null}={}){
+ const from=Date.parse(data.validFromUtc),until=Date.parse(data.validUntilUtc);
+ if(!(from<=now&&now<until))throw new Error('Horaires théoriques expirés. Actualisez les données.');
+ const projected=consultationTime!==null,reference=projected?consultationTime:now;
+ if(projected&&!(Number.isSafeInteger(reference)&&reference>=from&&reference<until)){
+  const error=new Error('L’heure choisie est hors de la période couverte par les horaires.');
+  error.code='projection_outside_coverage';throw error;
+ }
+ const rows=data.groups[JSON.stringify([query.stopId,query.lineId,query.directionId])];
+ if(!rows)throw new Error('Horaires théoriques non disponibles pour ce service.');
+ if(groupByNextStop&&data.schemaVersion!==2)throw new Error('Actualisez les horaires pour regrouper les sens de départ.');
+ const horizon=Math.min(until,reference+3600000);
+ let future=rows.filter(row=>{
+  const instant=row[0]*1000;
+  return projected?instant>=reference&&instant<horizon:instant>now;
+ });
+ if(groupByNextStop){
+  const counts=new Map(),seen=new Set();
+  future=future.filter(row=>{
+   const id=JSON.stringify([row[1],row[2],row[5]]),key=JSON.stringify([row[4],data.tripDirections?.[row[2]]??null]),n=counts.get(key)||0;
+   if(seen.has(id)||n>=3)return false;
+   seen.add(id);counts.set(key,n+1);return true;
+  });
+ }else future=future.slice(0,3);
+ const toEvent=row=>({
+  id:JSON.stringify(row),stopId:query.stopId,lineId:query.lineId,directionId:query.directionId,destinationName:query.destinationName,
+  tripRef:row[2],gtfsDirectionId:data.tripDirections?.[row[2]]??null,directionSource:data.directionVersion===1?'GTFS direction_id':'unavailable',
+  stopSequence:row[3],nextStopId:row[4]||null,nextStopSequence:row[5]??null,mode:query.mode||'metro',serviceDate:row[1],
+  scheduledTimeUtc:new Date(row[0]*1000).toISOString(),expectedTimeUtc:null,sourceRecordedAtUtc:null,quality:'timetable',status:'scheduled',
+  source:'Île-de-France Mobilités — GTFS',...(projected?{consultationTime:reference}:{}),
+  ...(tripCalls?{tripCalls,clockAnchor:{server:now,mono:performance.now()},clockSource}:{})
+ });
+ const departures=future.map(toEvent),tripChoices=[];
+ if(groupByNextStop&&tripCalls){
+  const byDirection=new Map();
+  for(const row of rows){
+   const instant=row[0]*1000;
+   if(instant<from||instant>=until)continue;
+   const key=data.tripDirections?.[row[2]]??null;
+   if(!byDirection.has(key))byDirection.set(key,{past:[],future:[],seen:new Set()});
+   const list=byDirection.get(key),id=JSON.stringify([row[1],row[2],row[5]]);
+   if(list.seen.has(id))continue;
+   list.seen.add(id);
+   if(projected?instant<reference:instant<=reference){list.past.push(row);if(list.past.length>3)list.past.shift();}
+   else if(list.future.length<11)list.future.push(row);
+  }
+  for(const list of byDirection.values())tripChoices.push(...list.past.map(toEvent),...list.future.map(toEvent));
+ }
+ return {
+  schemaVersion:1,serverTimeUtc:new Date(now).toISOString(),query:{stopId:query.stopId,lineId:query.lineId,directionId:query.directionId},
+  coverage:{status:'unknown',provider:'Île-de-France Mobilités — GTFS (théorique)'},serviceStatus:departures.length?'partial':'none_announced',
+  departures,tripChoices,nextRefreshAfterSeconds:60,validUntilUtc:data.validUntilUtc,
+  ...(projected&&horizon<reference+3600000?{projectionLimit:horizon}:{})
+ };
+}
 async function load(query,networkSha,signal,base='./distribution/timetable/'){
  let record=memory.get(query.lineId),anchor=null;
  try{const start=performance.now(),r=await fetch(base+'manifest.json?format=2',{cache:'no-store',signal});if(!r.ok)throw new Error();const server=httpTime(r.headers.get('Date'),r.headers.get('Age'),performance.now()-start);if(Number.isFinite(server))anchor={server,mono:performance.now()};const manifest=await r.json(),file=manifest.lines?.[query.lineId];if(!file||!/^[A-Za-z0-9-]+\.json$/.test(file.file))throw new Error('Horaires théoriques non disponibles pour cette ligne.');
@@ -15,15 +69,15 @@ async function load(query,networkSha,signal,base='./distribution/timetable/'){
  }catch(error){if(signal?.aborted)throw error;record=record||await stored(query.lineId).catch(()=>null);if(!record)throw new Error(error.message||'Horaires théoriques indisponibles.');}
  const data=await validate(record.bytes,record.manifest,query.lineId,networkSha);const now=anchor?anchor.server+performance.now()-anchor.mono:Date.now();return {...response(data,query,now,false,binding(record.manifest,query.lineId),anchor?'server':'device'),clockSource:anchor?'server':'device',referenceDate:record.manifest.referenceDate};
 }
-async function loadMany(queries,networkSha,signal,base='./distribution/timetable/',groupByNextStop=false){
+async function loadMany(queries,networkSha,signal,base='./distribution/timetable/',groupByNextStop=false,options={}){
  let manifest=null,anchor=null;try{const start=performance.now(),r=await fetch(base+'manifest.json?format=2',{cache:'no-store',signal});if(!r.ok)throw new Error();const server=httpTime(r.headers.get('Date'),r.headers.get('Age'),performance.now()-start);if(Number.isFinite(server))anchor={server,mono:performance.now()};manifest=await r.json();}catch(error){if(signal?.aborted)throw error;}
  const lines=[...new Set(queries.map(q=>q.lineId))],records=new Map();let cursor=0;
  async function worker(){while(cursor<lines.length){const line=lines[cursor++];let record=memory.get(line);try{const file=manifest?.lines?.[line];if(file){if(!/^[A-Za-z0-9-]+\.json$/.test(file.file))throw new Error('Chemin horaire incorrect');if(record&&record.manifest.lines?.[line]?.sha256===file.sha256&&record.manifest.networkSha256===networkSha){record={bytes:record.bytes,manifest};memory.set(line,record);await save(line,record).catch(()=>{});}if(!record||record.manifest.lines?.[line]?.sha256!==file.sha256||record.manifest.networkSha256!==networkSha){const r=await fetch(base+file.file+'?format=2',{cache:'no-store',signal});if(!r.ok)throw new Error();const bytes=await r.arrayBuffer();await validate(bytes,manifest,line,networkSha);record={bytes,manifest};memory.set(line,record);await save(line,record).catch(()=>{});}}else if(manifest)throw new Error('Horaires non disponibles pour cette ligne');
  if(!record)record=await stored(line).catch(()=>null);if(!record)throw new Error('Horaires indisponibles hors ligne');const data=await validate(record.bytes,record.manifest,line,networkSha);records.set(line,{data,manifest:record.manifest});
  }catch(error){if(signal?.aborted)throw error;record=record||await stored(line).catch(()=>null);try{if(!record)throw error;records.set(line,{data:await validate(record.bytes,record.manifest,line,networkSha),manifest:record.manifest});}catch{records.set(line,{error:'Horaires théoriques indisponibles pour cette ligne.'});}}}}
  await Promise.all(Array.from({length:Math.min(3,lines.length)},worker));if(signal?.aborted)throw new Error('Consultation arrêtée');
- return queries.map(query=>{const row=records.get(query.lineId);if(row?.error)return {query,error:row.error};try{const now=anchor?anchor.server+performance.now()-anchor.mono:Date.now();return {query,response:{...response(row.data,query,now,groupByNextStop,binding(row.manifest,query.lineId),anchor?'server':'device'),clockSource:anchor?'server':'device'}};}catch(error){return {query,error:error.message};}});
+ return queries.map(query=>{const row=records.get(query.lineId);if(row?.error)return {query,error:row.error};try{const now=anchor?anchor.server+performance.now()-anchor.mono:Date.now();return {query,response:{...response(row.data,query,now,groupByNextStop,binding(row.manifest,query.lineId),anchor?'server':'device',options),clockSource:anchor?'server':'device'}};}catch(error){return {query,error:error.message,code:error.code};}});
 }
 async function erase(){memory.clear();const db=await open();try{await new Promise((resolve,reject)=>{const t=db.transaction('lines','readwrite');t.objectStore('lines').clear();t.oncomplete=resolve;t.onerror=()=>reject(t.error)})}finally{db.close()}}
-return {validate,response,load,loadMany,erase,httpTime,bundleVersion:'2026-11-08.18',tripCallsVersion:1};
+return {validate,response,load,loadMany,erase,httpTime,bundleVersion:'2026-11-08.18',tripCallsVersion:1,projectionVersion:1};
 });
