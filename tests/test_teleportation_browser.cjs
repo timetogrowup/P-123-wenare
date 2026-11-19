@@ -69,7 +69,7 @@ async function fixture(context,denyGPS=false,overrides={}){
   if(url.origin!==new URL(base).origin)return route.abort();
   if(url.pathname==='/walking-fixture')return route.fulfill({status:503});
   const script=url.pathname.split('/').pop()||'index.html';
-  if(Object.hasOwn(overrides,script))return route.fulfill({contentType:script.endsWith('.css')?'text/css':'text/html',body:overrides[script]});
+  if(Object.hasOwn(overrides,script))return route.fulfill({contentType:script.endsWith('.css')?'text/css':script.endsWith('.js')?'application/javascript':'text/html',body:overrides[script]});
   if(!patches[script])return route.continue();
   return route.fulfill({contentType:'application/javascript',body:fs.readFileSync(script,'utf8')+'\n'+patches[script]});
  });
@@ -103,8 +103,8 @@ if(require.main===module)(async()=>{
   await page.waitForFunction(()=>document.activeElement.getAttribute('aria-label')==='Explorer Auber');
   await button(page,'#tripCallsDialog','Explorer La Défense');
   await page.getByRole('button',{name:/À l’arrivée · 09:20/}).click();
-  await page.waitForFunction(()=>document.activeElement.id==='teleportBanner');
-  assert.match(await page.locator('#teleportBanner').innerText(),/Exploration à La Défense.*\n.*09:20/);
+  await page.waitForFunction(()=>document.activeElement.id==='nearbyOverview');
+  assert.match(await page.locator('#wenareSituation').innerText(),/Il sera 09 h 20.*La Défense/);
   assert.equal(await page.evaluate(()=>WenareTeleportationUI.read().at),arrival);
   await page.getByRole('button',{name:/📍 La Défense/}).click();
   const departure=await page.locator('.departure-times').first().innerText();
@@ -124,23 +124,26 @@ if(require.main===module)(async()=>{
   await page.locator('#placesDialog .teleport-exploration-pin').waitFor();
   await page.locator('#placesDialog .places-position').waitFor();
   await button(page,'#placesDialog','Retour à la liste');
-  await button(page,'#teleportBanner','Ajouter aux lieux habituels');
-  await button(page,'#teleportBanner','Revenir à ma position');
+  await page.locator('#openHabitualPlaces').click();
+  await page.locator('#saveHabitualPlace').click();
+  await page.locator('#habitualPlacesDialog').getByRole('button',{name:'Fermer',exact:true}).click();
+  await page.locator('#returnToPosition').click();
   await page.getByRole('button',{name:/📍 Poissy/}).waitFor();
-  assert.equal(await page.evaluate(()=>window.gpsCalls),1);
+  assert.equal(await page.evaluate(()=>window.gpsCalls),2);
   await page.getByRole('button',{name:/📍 Poissy/}).click();
   await button(page,'#nearbyCards','Explorer Poissy');
-  await page.waitForFunction(()=>document.activeElement.id==='teleportBanner');
-  assert.match(await page.locator('#teleportBanner').innerText(),/Poissy/);
+  await page.waitForFunction(()=>document.activeElement.id==='nearbyOverview');
+  assert.match(await page.locator('#wenareSituation').innerText(),/Poissy/);
   await page.reload();
-  await page.getByRole('button',{name:'Téléportation · lieux habituels'}).click();
-  await button(page,'.teleport-dialog','La Défense');
+  await page.getByRole('button',{name:'Lieux habituels'}).click();
+  await button(page,'#habitualPlacesDialog','La Défense');
+  await page.waitForFunction(()=>WenareTeleportationUI.read().destination?.label==='La Défense');
   assert.equal(await page.evaluate(()=>WenareTeleportationUI.read().at),null);
-  await page.getByRole('button',{name:'Téléportation · lieux habituels'}).click();
-  await button(page,'.teleport-dialog','Supprimer La Défense');
-  assert.equal(await page.locator('.teleport-dialog').getByRole('button',{name:'La Défense',exact:true}).count(),0);
+  await page.getByRole('button',{name:'Lieux habituels'}).click();
+  await button(page,'#habitualPlacesDialog','Supprimer La Défense');
+  assert.equal(await page.locator('#habitualPlacesDialog').getByRole('button',{name:'La Défense',exact:true}).count(),0);
   await page.keyboard.press('Escape');
-  await page.waitForFunction(()=>document.activeElement.id==='openTeleportation');
+  await page.waitForFunction(()=>document.activeElement.id==='openHabitualPlaces');
   await page.setViewportSize({width:320,height:740});
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
   assert.deepEqual(errors,[]);
@@ -160,3 +163,4 @@ if(require.main===module)(async()=>{
   await denied.close();
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});
+

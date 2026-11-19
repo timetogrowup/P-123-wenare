@@ -102,6 +102,18 @@ test('the new shell caches all versioned scripts and styles referenced by the pa
  }
 });
 
+test('the staged client contract matches every root resource and its qualified hash',()=>{
+ const fs=require('node:fs'),crypto=require('node:crypto');
+ const manifest=JSON.parse(fs.readFileSync('release-client/trip-calls-release.json','utf8'));
+ assert.equal(manifest.version,2);
+ assert.equal(Object.keys(manifest.files).length,13);
+ for(const [name,digest] of Object.entries(manifest.files)){
+  const staged=fs.readFileSync('release-client/'+name),root=fs.readFileSync(name);
+  assert.equal(crypto.createHash('sha256').update(staged).digest('hex'),digest,name+' qualified hash');
+  assert.deepEqual(root,staged,name+' maintenance must preserve the delivered client');
+ }
+});
+
 test('the header distinguishes real position, immediate and fixed projection independently of loaded results',()=>{
  const wall=Date.parse('2026-11-19T16:00:00Z');
  const physical={status:'ready',position:{lat:48.9,lon:2.2,accuracy:20,timestamp:wall},location:{label:'l’arrêt « Argentine »',relation:'near'}};
@@ -157,3 +169,37 @@ test('coordinate labels are normalized across legacy favorites, projections and 
   assert.deepEqual(teleport.normalizeLabel(label),{label,labelKind:'named'});
  }
 });
+
+test('detailed favorite operations preserve identity and coordinates, report duplicates and validate before mutation',()=>{
+ let saved=JSON.stringify([{id:'old-map',lat:48.9,lon:2.2,label:'Point sélectionné sur la carte',labelKind:'map-point'}]);
+ const storage=()=>({getItem:()=>saved,setItem:(_key,value)=>{saved=value;}});
+ const favorites=teleport.createFavorites(storage);
+ const result=favorites.rename('old-map','  Chez   moi  ');
+ assert.equal(result.status,'renamed');assert.equal(result.persistence,'stored');
+ assert.deepEqual(result.favorite,{id:'old-map',lat:48.9,lon:2.2,label:'Chez moi',labelKind:'named'});
+ assert.deepEqual(teleport.createFavorites(storage).read()[0],result.favorite);
+ const snapshot=saved;
+ for(const label of ['', 'x'.repeat(141), '48.9000, 2.2000'])assert.equal(favorites.rename('old-map',label).status,'invalid');
+ assert.equal(saved,snapshot);
+ assert.equal(favorites.rename('missing','Maison').status,'not-found');
+ const duplicate=favorites.create({lat:48.9,lon:2.2,label:'Nouveau nom'});
+ assert.equal(duplicate.status,'duplicate');assert.equal(duplicate.favorite.label,'Chez moi');assert.equal(saved,snapshot);
+ assert.equal(favorites.create({...poissy,label:'Place du 8 Mai 1945'}).status,'created');
+ assert.equal(favorites.create({...poissy,lat:48.935,label:'Autre nom'}).status,'duplicate');
+ assert.equal(favorites.delete('missing').status,'not-found');
+ assert.equal(favorites.delete('old-map').status,'removed');
+ assert.equal(teleport.createFavorites(storage).read().length,1);
+});
+
+test('favorite storage failures remain explicit and can recover without losing session changes',()=>{
+ let fail=true,saved;
+ const storage=()=>({getItem:()=>saved,setItem:(_key,value)=>{if(fail)throw Error('quota');saved=value;}});
+ const favorites=teleport.createFavorites(storage);
+ const created=favorites.create(poissy);assert.equal(created.persistence,'session');assert.equal(favorites.persistent(),false);
+ const renamed=favorites.rename(created.favorite.id,'Maison');assert.equal(renamed.persistence,'session');
+ assert.equal(favorites.read()[0].label,'Maison');fail=false;
+ assert.equal(favorites.create(defense).persistence,'stored');assert.equal(favorites.persistent(),true);
+ assert.equal(teleport.createFavorites(storage).read().length,2);
+ assert.equal(teleport.createFavorites(storage).read()[0].label,'Maison');
+});
+

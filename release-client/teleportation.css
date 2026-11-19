@@ -43,11 +43,11 @@
 #wenareHeader .wenare-situation-copy { min-width: 0; flex: 1; overflow-wrap: anywhere; }
 #wenareHeader #wenareSituation, #wenareHeader #wenareQuestion { font-size: .9rem; line-height: 1.35; }
 #wenareProjectionStatus { margin-top: 6px; font-weight: 750; color: inherit; }
-#wenareHeader[data-teleportation="true"] :is(#wenareLogoSignal, #wenareNameSignal) {
+#wenareHeader[data-teleportation="true"] :is(#wenareLogoSignal .wenare-mark, #wenareNameSignal) {
  animation: wenare-teleport-shake 480ms linear infinite;
  will-change: transform;
 }
-#wenareHeader[data-document-hidden="true"] :is(#wenareLogoSignal, #wenareNameSignal) { animation-play-state: paused; }
+#wenareHeader[data-document-hidden="true"] :is(#wenareLogoSignal .wenare-mark, #wenareNameSignal) { animation-play-state: paused; }
 @keyframes wenare-teleport-shake {
  0%,100% { transform: translate(0,0) rotate(0); }
  12.5% { transform: translate(-3px,1px) rotate(-1deg); }
@@ -59,7 +59,7 @@
  87.5% { transform: translate(-2px,1px) rotate(-1deg); }
 }
 @media (prefers-reduced-motion: reduce) {
- #wenareHeader[data-teleportation] :is(#wenareLogoSignal, #wenareNameSignal) { animation: none !important; will-change: auto; }
+ #wenareHeader[data-teleportation] :is(#wenareLogoSignal .wenare-mark, #wenareNameSignal) { animation: none !important; will-change: auto; }
 }
 @media (max-width: 360px) {
  #wenareHeader { gap: 8px; flex-wrap: wrap; }
@@ -133,3 +133,49 @@ html body #wenareHeader .settings-open span { display: block; font-size: 24px; l
 html body #nearbyOverview .radius-buttons {
  grid-template-columns: repeat(auto-fit, minmax(min(100%, 2.5rem), 1fr));
 }
+
+/* W is a stable button; only its inner logo carries the projection movement. */
+html body #wenareHeader #returnToPosition {
+ grid-column: 1; grid-row: 1; display: grid; place-items: center;
+ width: 44px; height: 44px; min-width: 44px; min-height: 44px;
+ padding: 0; margin: 0; border: 0; background: transparent; color: inherit;
+}
+html body #wenareHeader #returnToPosition[aria-disabled="true"] { cursor: progress; }
+html body #wenareHeader .wenare-header-identity {
+ grid-column: 2; grid-row: 1; display: flex; align-items: center; flex-wrap: wrap;
+ gap: 0 6px; min-width: 0; flex: none;
+}
+html body #wenareHeader .wenare-header-identity h1 { flex: 0 1 auto; overflow-wrap: anywhere; }
+html body #wenareHeader #openHabitualPlaces {
+ display: inline-grid; place-items: center; flex: 0 0 44px;
+ width: 44px; height: 44px; min-width: 44px; min-height: 44px; padding: 8px; margin: 0;
+}
+html body #wenareHeader #openHabitualPlaces svg { width: 24px; height: 24px; }
+html body #wenareHeader #wenareCommandFeedback {
+ grid-column: 1 / -1; grid-row: 4; margin: 3px 0 0; max-width: none;
+ font-size: .875rem; line-height: 1.3; overflow-wrap: anywhere;
+}
+html body #wenareHeader[data-teleportation="true"] #openHabitualPlaces {
+ background: #1d2c48; color: var(--wenare-header-ink); border: 1px solid var(--wenare-header-accent);
+}
+.teleport-context { padding: 8px 0; overflow-wrap: anywhere; }
+.teleport-context[hidden] { display: none; }
+.habitual-places-dialog {
+ box-sizing: border-box; width: min(580px, calc(100% - 24px)); max-height: calc(100dvh - 24px);
+ padding: 16px; overflow: auto; border: 1px solid var(--wenare-accent); border-radius: 16px;
+ background: var(--wenare-surface, #fff); color: var(--wenare-ink, #102846);
+}
+.habitual-places-dialog::backdrop { background: #10284699; }
+.habitual-heading { display: flex; gap: 12px; justify-content: space-between; align-items: center; }
+.habitual-heading h2 { margin: 0; }
+.habitual-places-dialog :is(button, input) { min-height: 44px; }
+.habitual-list { display: grid; gap: 8px; margin-block: 16px; }
+.habitual-row { display: flex; flex-wrap: wrap; gap: 6px; border-bottom: 1px solid var(--wenare-accent); padding-bottom: 8px; }
+.habitual-row button { overflow-wrap: anywhere; }
+.habitual-row button:first-child { flex: 1 1 100%; text-align: left; }
+.habitual-form { border-top: 1px solid var(--wenare-accent); padding-top: 12px; }
+.habitual-form h3 { margin: 0 0 8px; }
+.habitual-form input { display: block; width: 100%; min-width: 0; margin: 6px 0; }
+.habitual-places-dialog p { line-height: 1.4; overflow-wrap: anywhere; }
+.habitual-storage-note { border-left: 3px solid var(--wenare-accent); padding-left: 8px; }
+.habitual-message:empty { display: none; }
