@@ -1,5 +1,5 @@
 """Build public, licensed POI snapshots; never query suppliers with a visitor's GPS."""
-import argparse, csv, datetime as dt, gzip, hashlib, html, io, json, re, time
+import argparse, csv, datetime as dt, gzip, hashlib, html, io, json, re, time, subprocess
 import urllib.parse, urllib.request
 from pathlib import Path
 
@@ -8,6 +8,34 @@ CATEGORIES = ('food','events','walk','needs','sport','shop','work','sleep','heal
 DATASET = 'https://www.data.gouv.fr/api/1/datasets/datatourisme-la-plateforme-nationale-des-donnees-touristiques/'
 OSM_QUERY = '[out:json][timeout:120];area["ISO3166-2"="FR-IDF"]["boundary"="administrative"]->.a;(nwr(area.a)[amenity~"^(pharmacy|library|toilets|drinking_water|coworking_space)$"];nwr(area.a)[office=coworking];);out center tags;'
 PARIS = 'https://opendata.paris.fr/api/explore/v2.1/catalog/datasets/'
+OSM_ENDPOINTS = ('https://overpass-api.de/api/interpreter',
+                 'https://overpass.private.coffee/api/interpreter')
+
+def download_osm():
+    """Try independent OSM mirrors with bounded connection and total deadlines."""
+    errors=[]
+    for endpoint in OSM_ENDPOINTS:
+        print('OSM_FETCH',endpoint,flush=True)
+        try:
+            response=subprocess.run([
+                'curl','--fail','--silent','--show-error','--location',
+                '--proto','=https','--proto-redir','=https','--ipv4',
+                '--connect-timeout','12','--max-time','180','--max-filesize','40000000',
+                '--user-agent','WENARE-opportunities/1.0 (public snapshot builder)',
+                '--get','--data-urlencode','data='+OSM_QUERY,endpoint,
+            ],check=True,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=190)
+            raw=response.stdout
+            if len(raw)>40_000_000: raise ValueError('OSM source exceeds bounded download')
+            payload=json.loads(raw)
+            if not isinstance(payload,dict) or not payload.get('elements'):
+                raise ValueError('Missing regional OSM elements')
+            osm_rows(payload)  # Reject server remarks and partial/error responses before caching.
+            print('OSM_FETCH_OK',endpoint,len(raw),flush=True)
+            return raw,endpoint
+        except (OSError,subprocess.SubprocessError,ValueError) as error:
+            errors.append(endpoint+': '+type(error).__name__)
+            print('OSM_FETCH_FAILED',endpoint,type(error).__name__,flush=True)
+    raise RuntimeError('No complete regional OSM response: '+'; '.join(errors))
 
 def digest(raw): return hashlib.sha256(raw).hexdigest()
 def compact(value): return json.dumps(value, ensure_ascii=False, separators=(',',':')).encode()
@@ -127,13 +155,14 @@ def validate(entries):
 def main():
     parser=argparse.ArgumentParser();parser.add_argument('--source-dir',type=Path);args=parser.parse_args()
     cache=args.source_dir or ROOT/'.cache'/'opportunities';cache.mkdir(parents=True,exist_ok=True)
+    osm_endpoint=None
     if not args.source_dir:
         data=json.loads(download(DATASET));resource=next(r for r in data['resources'] if r['title']=='datatourisme-reg-idf.csv')
         if data.get('license') not in ('fr-lo','etalab-2.0'):raise ValueError('Tourism license changed')
         (cache/'datatourisme-idf.csv').write_bytes(download(resource['url']))
         (cache/'datatourisme-meta.json').write_text(json.dumps({'url':resource['url'],'modified':resource['last_modified'],'license':data['license'],'resource':resource['id']}))
-        osm_url='https://overpass-api.de/api/interpreter?'+urllib.parse.urlencode({'data':OSM_QUERY})
-        (cache/'osm-idf.json').write_bytes(download(osm_url,150))
+        osm_raw,osm_endpoint=download_osm()
+        (cache/'osm-idf.json').write_bytes(osm_raw)
     now=dt.datetime.now(dt.timezone.utc);collected=now.isoformat();raw=(cache/'datatourisme-idf.csv').read_bytes();meta=json.loads((cache/'datatourisme-meta.json').read_text())
     entries=tourism_rows(raw)+osm_rows(json.loads((cache/'osm-idf.json').read_bytes()))
     sources={
@@ -141,6 +170,7 @@ def main():
       'osm':{'name':'© les contributeurs OpenStreetMap','license':'ODbL 1.0','licenseUrl':'https://www.openstreetmap.org/copyright','url':'https://www.openstreetmap.org','sha256':digest((cache/'osm-idf.json').read_bytes()),'coverage':'Île-de-France, saisie contributive partielle'},
       'paris':{'name':'Ville de Paris / Eau de Paris','license':'ODbL 1.0','licenseUrl':'https://opendata.paris.fr/pages/conditions-generales-dutilisation/','url':'https://opendata.paris.fr/','coverage':'Paris uniquement, équipements déclarés en service'}
     }
+    if osm_endpoint: sources['osm']['endpoint']=osm_endpoint
     # A missing optional local enrichment never corrupts the regional sources.
     issues=[]
     for name in ('sanisettesparis','fontaines-a-boire'):
@@ -180,3 +210,4 @@ def main():
     (target/'manifest.json').write_bytes(compact(manifest));print(json.dumps({'status':'OPPORTUNITIES_VALIDATED','total':total,'categories':{k:v['count'] for k,v in manifest['categories'].items()},'issues':issues}))
 
 if __name__=='__main__': main()
+
