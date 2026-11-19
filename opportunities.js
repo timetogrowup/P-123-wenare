@@ -1,7 +1,7 @@
 (function(root,factory){const api=factory();if(typeof module==='object'&&module.exports)module.exports=api;else root.WenareOpportunities=api;})(typeof globalThis!=='undefined'?globalThis:this,function(){'use strict';
 const RADII=Object.freeze([250,500,1000,3000,5000,10000]);
 const CATEGORIES=Object.freeze([
- {id:'transport',icon:'🚍',short:'Transport',title:'Se déplacer'},
+ {id:'transport',icon:'🚍',short:'Bouger',title:'Se déplacer'},
  {id:'food',icon:'🍔',short:'Manger',title:'Manger et boire',limit:'Ouverture et service à vérifier'},
  {id:'events',icon:'🎭',short:'Sortir',title:'Sortir et se divertir',limit:'Programmation du jour · horaires et accès à vérifier'},
  {id:'walk',icon:'🌳',short:'Découvrir',title:'Se promener et découvrir',limit:'Conditions d’accès à vérifier'},

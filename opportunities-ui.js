@@ -1,6 +1,6 @@
 (function(){'use strict';
 const core=WenareOpportunities,$=id=>document.getElementById(id),el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
-let category='all',snapshot=null,catalogue=null,error=null,key=null,stopped=false,request=0,controller=null,resultCount=0;
+let category='transport',snapshot=null,catalogue=null,error=null,key=null,stopped=false,request=0,controller=null,resultCount=0;
 const expanded=new Set();
 function position(){const c=snapshot?.position?.coords;return c?{lat:c.latitude,lon:c.longitude}:null;}
 function radiusStatus(){if(!snapshot)return;const count=category==='transport'?(snapshot.transportCount||0):category==='all'?(snapshot.transportCount||0)+resultCount:resultCount;$('radiusStatus').textContent=(snapshot.manualRadius?'📍 ':'✨ Auto · ')+snapshot.radius.toLocaleString('fr-FR')+' m · '+count+' lieu'+(count===1?'':'x');}
@@ -30,7 +30,7 @@ function render(force=false){
  const p=position(),active=category==='all'||category==='transport';$('transportOverview').hidden=!active;$('nearbyOverviewStatus').hidden=!!p&&!active;
  $('domainAll').setAttribute('aria-pressed',String(category==='all'));document.querySelectorAll('[data-domain]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.domain===category)));
  const identity=JSON.stringify([category,snapshot?.radius,snapshot?.manualRadius,snapshot?.position?.timestamp,!!catalogue,error,stopped,core.parisDay()]);if(!force&&identity===key){radiusStatus();return;}key=identity;
- $('opportunityOverview').replaceChildren();publishMap();if(category==='transport'){resultCount=0;radiusStatus();return;}
+ $('opportunityOverview').replaceChildren();publishMap();if(category==='transport'){$('domainResultsStatus').textContent='';resultCount=0;radiusStatus();return;}
  const selected=core.CATEGORIES.filter(c=>c.id!=='transport'&&(category==='all'||category===c.id));let total=0;
  for(const c of selected){const section=el('section',undefined,'opportunity-section'),h=el('h3',c.icon+' '+c.title,'opportunity-title'),rows=catalogue&&p?core.select(catalogue.items[c.id]||[],p,snapshot.radius):[];
  h.append(el('span',rows.length?' '+rows.length+' lieu'+(rows.length>1?'x':''):'' ,'opportunity-count'));section.append(h);
