@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="fr" data-variant="c"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WENARE · Maquette C — Assistant guidé</title><link rel="stylesheet" href="prototype.css"></head>
+<body><div class="app">
+<header class="topbar" id="wenareHeader" data-teleportation="false">
+<button type="button" id="returnToPosition" class="mark" aria-label="Revenir ici et maintenant">W</button>
+<div class="brand">WENARE</div>
+<div class="header-actions"><button type="button" id="openPlus" aria-label="Lieux habituels et projection dans le temps" title="Lieux et moment" aria-haspopup="dialog" aria-controls="projectionDialog">+</button><button type="button" id="openSettings" aria-label="Changer de thème" aria-pressed="false" title="Thème">⚙</button></div>
+<p id="situation" class="situation">Je suis ici, il est maintenant l’heure actuelle</p>
+<p class="prompt">Qu’est-ce qui s’offre à moi ?</p></header>
+<main><p><a href="index.html">← Comparer les trois maquettes</a></p>
+<h1>C — Assistant guidé</h1><p>Être guidé en deux étapes, du lieu au moment.</p>
+<p class="demo"><strong>Maquette interactive</strong> : données fictives, pas de GPS ni d’horaires réels. Rien n’est enregistré dans WENARE.</p>
+<section class="card"><h2>Explorer autour de moi</h2><div class="radius-row" role="group" aria-label="Distance maximale">
+<button data-radius="250" aria-pressed="true">250 m</button><button data-radius="500" aria-pressed="false">500 m</button><button data-radius="1000" aria-pressed="false">1 000 m</button>
+</div><p id="radiusMessage" class="subtle">Rayon de démonstration : 250 m</p>
+<div class="chip-row"><span class="chip">🚆 Bouger</span><span class="chip">🍽️ Manger</span><span class="chip">🎭 Sortir</span></div>
+</section>
+<section class="card"><h2>Situation affichée</h2><p id="projectedState" tabindex="-1" class="context">Contexte de démonstration : ici et maintenant. Le GPS réel n’est pas utilisé.</p><p id="settingsMessage" class="subtle" role="status"></p></section>
+<p class="subtle">Touchez le <strong>+</strong> juste à gauche de ⚙ pour ouvrir la fenêtre ; sélectionnez un lieu et un moment, puis « Explorer ». Le <strong>W</strong> simule le retour.</p>
+</main></div>
+<dialog id="projectionDialog" class="sheet" aria-labelledby="dialogTitle">
+<div class="dialog-head"><h2 id="dialogTitle" tabindex="-1">Lieux habituels et projection</h2><button id="closeDialog" type="button" class="secondary">Fermer</button></div>
+<div id="dialogBody"></div><p id="modalStatus" role="status" aria-live="polite"></p>
+</dialog><script src="prototype.js"></script></body></html>
