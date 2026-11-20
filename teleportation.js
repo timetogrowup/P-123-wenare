@@ -153,5 +153,17 @@
   }
   return {situation,question,exploration,status:exploration?'Téléportation active':''};
  }
- return {normalizeLabel,destination,fromPlace,resolveStop,createState,createFavorites,time,clockText,locationText,freshPosition,presentation};
+ const parisMinute=new Intl.DateTimeFormat('sv-SE',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+ function parisInstant(date,clock){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)||!/^\d{2}:\d{2}$/.test(clock))return {status:'invalid'};
+  const label=date+' '+clock;
+  const utc=Date.parse(date+'T'+clock+':00Z');
+  if(!Number.isFinite(utc)||new Date(utc).toISOString().slice(0,16)!==date+'T'+clock)return {status:'invalid'};
+  const dayMs=86400000;
+  const offsets=new Set([utc-dayMs,utc,utc+dayMs].map(probe=>Date.parse(parisMinute.format(probe).replace(' ','T')+':00Z')-probe));
+  const matches=[...offsets].map(offset=>utc-offset).filter(at=>parisMinute.format(at)===label);
+  if(matches.length===1)return {status:'ok',at:matches[0]};
+  return {status:matches.length?'ambiguous':'missing'};
+ }
+ return {parisInstant,normalizeLabel,destination,fromPlace,resolveStop,createState,createFavorites,time,clockText,locationText,freshPosition,presentation};
 });

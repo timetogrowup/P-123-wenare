@@ -116,7 +116,40 @@
  const pick=secondary('Choisir sur la carte',pickForFavorite),save=create('button','Enregistrer');save.type='submit';save.id='saveHabitualPlace';
  const cancelEdit=secondary('Annuler la modification',()=>{if(!session)return;session.editId=null;session.draft=session.initial;renderForm();input.focus();});
  const formActions=create('div',null,'teleport-actions');formActions.append(save,pick,cancelEdit);form.append(formTitle,source,label,input,formActions);
- manager.append(managerHeading,message,storageNote,list,form);document.body.append(manager);
+ const moment=create('form',null,'habitual-moment'),momentTitle=create('h3','Choisir un moment');
+ const mode=create('select'),date=create('input'),clock=create('input'),fields=create('div',null,'habitual-moment-fields');
+ mode.id='habitualMoment';date.id='habitualDate';clock.id='habitualTime';date.type='date';clock.type='time';
+ for(const [value,text] of [['now','Maintenant'],['date','À une date précise']]){
+  const option=create('option',text);option.value=value;mode.append(option);
+ }
+ const labeled=(control,text)=>{const label=create('label',text);label.htmlFor=control.id;label.append(control);return label;};
+ fields.append(labeled(date,'Date'),labeled(clock,'Heure'));
+ const selected=create('p');selected.setAttribute('role','status');
+ const exploreButton=create('button','Explorer');exploreButton.type='submit';exploreButton.id='exploreHabitualPlace';
+ moment.append(momentTitle,labeled(mode,'Moment · heure de Paris'),fields,selected,exploreButton);
+ const destinationPanel=create('section',null,'habitual-destination');
+ destinationPanel.append(list,form);
+ const panels=create('div',null,'habitual-panels');panels.append(destinationPanel,moment);
+ managerTitle.textContent='Lieu et moment';
+ manager.append(managerHeading,message,storageNote,panels);document.body.append(manager);
+ function renderMoment(){
+  fields.hidden=mode.value!=='date';date.required=clock.required=!fields.hidden;
+  selected.textContent=session?.selected?'Destination : '+session.selected.label:'Choisissez un lieu habituel ou un point sur la carte.';
+  exploreButton.disabled=!session?.selected;
+ }
+ mode.onchange=renderMoment;
+ moment.onsubmit=async event=>{
+  event.preventDefault();
+  if(!session?.selected)return;
+  const instant=mode.value==='date'?core.parisInstant(date.value,clock.value):{status:'ok',at:null};
+  if(instant.status!=='ok'){
+   say({invalid:'Indiquez une date et une heure valides.',missing:'Cette heure n’existe pas à Paris ce jour-là.',ambiguous:'Cette heure arrive deux fois à Paris ce jour-là. Choisissez une autre heure.'}[instant.status]);
+   clock.focus();return;
+  }
+  const chosen=session.selected;
+  suppressManagerClose=true;session.controller?.abort();session=null;sessionId++;
+  await closeModal(manager);explore(chosen,instant.at);
+ };
  let session=null,sessionId=0,suppressManagerClose=false;
  manager.addEventListener('close',()=>{
   if(suppressManagerClose){suppressManagerClose=false;return;}
@@ -140,9 +173,9 @@
   if(!rows.length)list.append(create('p','Aucun lieu habituel. Ajoutez le lieu consulté ou choisissez un point sur la carte.'));
   for(const point of rows){
    const row=create('div',null,'habitual-row');row.dataset.favoriteId=point.id;
-   const select=secondary(point.label,async()=>{const chosen={...point};suppressManagerClose=true;session?.controller?.abort();session=null;sessionId++;await closeModal(manager);explore(chosen,null);});select.dataset.favoriteSelect=point.id;
+   const select=secondary(point.label,()=>{session.selected={...point};renderMoment();for(const button of list.querySelectorAll('[data-favorite-select]'))button.setAttribute('aria-pressed',String(button===select));});select.dataset.favoriteSelect=point.id;select.setAttribute('aria-pressed',String(session?.selected?.id===point.id));
    const rename=secondary('Renommer',()=>{session.editId=point.id;session.draft={point:{...point},origin:'favorite'};renderForm();input.focus();input.select();});rename.setAttribute('aria-label','Renommer '+point.label);
-   const remove=secondary('Supprimer',()=>{const result=favorites.delete(point.id);if(session.editId===point.id){session.editId=null;session.draft=session.initial;renderForm();}renderList();say(feedback(result));(list.querySelector('button')||input).focus();});remove.setAttribute('aria-label','Supprimer '+point.label);
+   const remove=secondary('Supprimer',()=>{const result=favorites.delete(point.id);if(session.selected?.id===point.id)session.selected=null;renderMoment();if(session.editId===point.id){session.editId=null;session.draft=session.initial;renderForm();}renderList();say(feedback(result));(list.querySelector('button')||input).focus();});remove.setAttribute('aria-label','Supprimer '+point.label);
    row.append(select,rename,remove);list.append(row);
   }
  }
@@ -156,14 +189,14 @@
  function openHabitualPlaces({candidate:given=null,returnTo=null}={}){
   if(manager.open)return;
   session?.controller?.abort();
-  const initial=given||candidate();session={id:++sessionId,initial,draft:initial,editId:null,returnTo,controller:null};
-  renderList();renderForm();say('');manager.showModal();managerTitle.focus();
+  const initial=given||candidate();session={id:++sessionId,initial,draft:initial,selected:initial?.point??null,editId:null,returnTo,controller:null};
+  mode.value='now';date.value='';clock.value='';renderList();renderForm();renderMoment();say('');manager.showModal();managerTitle.focus();
  }
  form.onsubmit=event=>{
   event.preventDefault();if(!session?.draft)return;
   const result=session.editId?favorites.rename(session.editId,input.value):favorites.create({...session.draft.point,label:input.value,labelKind:input.value.trim()===session.draft.point.label?session.draft.point.labelKind:'named'});
   say(feedback(result));if(!['created','renamed'].includes(result.status))return;
-  session.editId=null;session.draft={point:{...result.favorite},origin:'favorite'};renderList();renderForm();
+  session.selected={...result.favorite};renderMoment();session.editId=null;session.draft={point:{...result.favorite},origin:'favorite'};renderList();renderForm();
   Array.from(list.querySelectorAll('[data-favorite-select]')).find(e=>e.dataset.favoriteSelect===result.favorite.id)?.focus();
  };
  async function pickForFavorite(){
@@ -175,7 +208,7 @@
   try{result=await window.WenarePlacesMapUI.pickPoint({initialPoint:current.draft?.point,signal:current.controller.signal});}
   catch{result={status:'error',message:'La carte est indisponible. Réessayez.'};}
   if(session!==current||id!==sessionId)return;
-  if(result.status==='selected')current.draft={point:{...result.point},origin:'map',capturedAt:Date.now()};
+  if(result.status==='selected'){current.draft={point:{...result.point},origin:'map',capturedAt:Date.now()};current.selected={...result.point};renderList();renderMoment();}
   renderForm();say(result.status==='error'?result.message:'');manager.showModal();input.focus();
  }
  $('openHabitualPlaces').onclick=()=>openHabitualPlaces();

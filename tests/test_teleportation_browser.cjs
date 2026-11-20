@@ -138,6 +138,7 @@ if(require.main===module)(async()=>{
   await page.reload();
   await page.getByRole('button',{name:'Lieux habituels'}).click();
   await button(page,'#habitualPlacesDialog','La Défense');
+  await page.locator('#exploreHabitualPlace').click();
   await page.waitForFunction(()=>WenareTeleportationUI.read().destination?.label==='La Défense');
   assert.equal(await page.evaluate(()=>WenareTeleportationUI.read().at),null);
   await page.getByRole('button',{name:'Lieux habituels'}).click();

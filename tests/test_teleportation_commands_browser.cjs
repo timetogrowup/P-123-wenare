@@ -71,10 +71,15 @@ const name=process.env.MMI_BROWSER||'chromium';
   await page.evaluate(()=>{WenarePlacesMapUI.pickPoint=originalPicker;});
   await page.keyboard.press('Escape');
 
-  // Selecting a favorite explicitly resets the projected hour, then W restores real space and time.
+  // Selecting a favorite drafts the destination until Explorer confirms the moment.
   await page.locator('#openHabitualPlaces').click();await page.getByRole('button',{name:'Maison',exact:true}).click();
+  assert.equal(await page.evaluate(()=>WenareTeleportationUI.read().destination.label),'La Défense');
+  await page.selectOption('#habitualMoment','date');
+  await page.fill('#habitualDate','2026-11-20');
+  await page.fill('#habitualTime','16:45');
+  await page.locator('#exploreHabitualPlace').click();
   await page.waitForFunction(()=>WenareTeleportationUI.read().destination?.label==='Maison');
-  assert.equal(await page.evaluate(()=>WenareTeleportationUI.read().at),null);
+  assert.equal(await page.evaluate(()=>WenareTeleportationUI.read().at),Date.parse('2026-11-20T15:45:00Z'));
   assert.equal(await page.evaluate(()=>WenareTeleportationUI.read().destination.label),'Maison');
   await page.evaluate(()=>{window.pendingGPS=[];navigator.geolocation.getCurrentPosition=(ok,error,options)=>pendingGPS.push({ok,error,options});});
   await page.locator('#returnToPosition').click();
