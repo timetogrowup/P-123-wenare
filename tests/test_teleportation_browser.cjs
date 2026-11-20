@@ -118,7 +118,7 @@ if(require.main===module)(async()=>{
   assert.deepEqual(walk.start,origin);
   assert.equal(walk.end.lat,defense.lat);
   await button(page,'#walkingDialog','Fermer le trajet piéton');
-  await page.getByRole('button',{name:'Tout voir'}).click();
+  await page.locator('[data-domain="sport"]').click();
   await page.locator('.opportunity-name').filter({hasText:'Salle à La Défense'}).waitFor();
   await page.getByRole('button',{name:'Ouvrir la carte des lieux'}).click();
   await page.locator('#placesDialog .teleport-exploration-pin').waitFor();
@@ -127,6 +127,7 @@ if(require.main===module)(async()=>{
   await page.locator('#openHabitualPlaces').click();
   await page.locator('#saveHabitualPlace').click();
   await page.locator('#habitualPlacesDialog').getByRole('button',{name:'Fermer',exact:true}).click();
+  await page.locator('[data-domain="transport"]').click();
   await page.locator('#returnToPosition').click();
   await page.getByRole('button',{name:/📍 Poissy/}).waitFor();
   assert.equal(await page.evaluate(()=>window.gpsCalls),2);
