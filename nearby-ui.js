@@ -57,7 +57,7 @@ async function returnToPosition({fresh=false}={}){
 function paintBadge(badge,lineId){return WenareLineColours.apply(badge,lineColours.get(lineId));}
 const icon=mode=>({metro:'Ⓜ',rer:'Ⓡ',bus:'🚌',tram:'Ⓣ',train:'🚆',ter:'🚆',shuttle:'🚈',cable:'🚡',funicular:'🚞'}[mode]||'🚏');
 function badge(service){const e=element('span',icon(service.mode)+' '+label(service.mode)+' '+service.lineName,'line-badge mode-'+service.mode);e.title=label(service.mode)+' '+service.lineName;return paintBadge(e,service.lineId);}
-function controls(){document.querySelectorAll('[data-radius]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.radius)===radius)));$('radiusStatus').textContent=(manualRadius?'📍':'✨ Auto ·')+' '+radius.toLocaleString('fr-FR')+' m · '+places.length+' point'+(places.length===1?'':'s')+(railPlaces.length?' · ＋'+railPlaces.length+' rail/câble':'');window.dispatchEvent(new CustomEvent('wenare:overview',{detail:{radius,manualRadius,enabled,transportCount:places.length+railPlaces.length,position:enabled?lastFix:null,exploration:{...context,center:enabled?center():null}}}));}
+function controls(){document.querySelectorAll('[data-radius]').forEach(b=>b.setAttribute('aria-pressed',String(Number(b.dataset.radius)===radius)));$('radiusStatus').textContent='Rayon sélectionné : '+radius.toLocaleString('fr-FR')+' m';window.dispatchEvent(new CustomEvent('wenare:overview',{detail:{radius,manualRadius,enabled,transportCount:places.length+railPlaces.length,position:enabled?lastFix:null,exploration:{...context,center:enabled?center():null}}}));}
 const label=mode=>({metro:'Métro',rer:'RER',bus:'Bus',tram:'Tram',train:'Transilien',ter:'TER',shuttle:'Navette',cable:'Câble',funicular:'Funiculaire'}[mode]||'Transport');
 const say=text=>{$('nearbyOverviewStatus').textContent=text;$('nearbyOverviewStatus').classList.toggle('is-error',/⚠|indisponible|Autorisez|imprécise|trop ancienne|hors (de la )?période|aucun arrêt/i.test(text));};
 function cancel(clear=true){sequence++;controller?.abort();controller=null;clearTimeout(timer);clearInterval(tick);timer=tick=null;if(clear){places=[];railPlaces=[];scanned=[];railScanned=[];loading=false;results.clear();$('nearbyCards').replaceChildren();$('railCards').replaceChildren();$('railOverview').hidden=true;}controls();}
@@ -156,7 +156,13 @@ async function start(silent=false,reuseFix=false){silent=silent===true&&!!center
  const stations=await catalogue;if(mine!==sequence||!stations)return;publishPhysical('stale');if(!stations.length){candidates=[];render();say('⚠ Données de transport indisponibles.');return;}
  if(!silent)results.clear();else for(const row of results.values())row.refreshPending=true;scanned=[];railScanned=[];candidates=core.nearby(stations,center(),stations.length);if(!silent){places=[];render();say('Chargement des horaires de toutes les lignes…');}await departures(mine);
 }
-document.querySelectorAll('[data-radius]').forEach(button=>button.onclick=async()=>{if(!center()||!enabled)return;manualRadius=true;radius=Number(button.dataset.radius);if(!candidates.length){controls();return;}cancel();controller=new AbortController();places=[];render();say('Chargement des horaires dans le rayon choisi…');await departures(sequence);});
+async function selectRadius(value){
+ if(![250,500,1000,3000,5000,10000].includes(value)||!center()||!enabled)return false;
+ manualRadius=true;radius=value;
+ if(!candidates.length){controls();return true;}
+ cancel();controller=new AbortController();places=[];render();say('Chargement des horaires dans le rayon choisi…');await departures(sequence);return true;
+}
+document.querySelectorAll('[data-radius]').forEach(button=>button.onclick=()=>selectRadius(Number(button.dataset.radius)));
 window.addEventListener('wenare:teleportation',event=>{
  context=event.detail;candidates=[];expanded.clear();
  document.querySelector('.theoretical-label').textContent=projected()
@@ -168,6 +174,6 @@ controls();
  document.addEventListener('visibilitychange',()=>{if(document.hidden){cancel();say('Consultation suspendue pendant votre absence.');}else if(enabled)start();});
  window.addEventListener('online',()=>{if(enabled&&!document.hidden)start(true);});
  window.addEventListener('pageshow',event=>{if(event.persisted&&enabled)start();});
- window.WenareOverview={returnToPosition,resolveStop:call=>teleportCore.resolveStop(call,locations),refreshDepartures(){if(!enabled||!center()||!candidates.length)return;cancel(false);for(const row of results.values())row.refreshPending=true;loading=false;scanned=[];railScanned=[];controller=new AbortController();departures(sequence);},refreshDomain(){if(!enabled||!center()||!candidates.length)return;cancel(false);loading=false;scanned=[];railScanned=[];controller=new AbortController();render();departures(sequence);}};
+ window.WenareOverview={returnToPosition,selectRadius,resolveStop:call=>teleportCore.resolveStop(call,locations),refreshDepartures(){if(!enabled||!center()||!candidates.length)return;cancel(false);for(const row of results.values())row.refreshPending=true;loading=false;scanned=[];railScanned=[];controller=new AbortController();departures(sequence);},refreshDomain(){if(!enabled||!center()||!candidates.length)return;cancel(false);loading=false;scanned=[];railScanned=[];controller=new AbortController();render();departures(sequence);}};
  start();
 })();
