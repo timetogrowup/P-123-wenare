@@ -3,7 +3,7 @@ const core=WenareOpportunities,$=id=>document.getElementById(id),el=(tag,text,cl
 let category='transport',snapshot=null,catalogue=null,error=null,key=null,stopped=false,request=0,controller=null,resultCount=0;
 const expanded=new Set();
 function position(){return snapshot?.exploration?.center||null;}
-function radiusStatus(){if(!snapshot)return;const count=category==='transport'?(snapshot.transportCount||0):category==='all'?(snapshot.transportCount||0)+resultCount:resultCount;$('radiusStatus').textContent=(snapshot.manualRadius?'📍 ':'✨ Auto · ')+snapshot.radius.toLocaleString('fr-FR')+' m · '+count+' lieu'+(count===1?'':'x');}
+function radiusStatus(){if(!snapshot)return;$('radiusStatus').textContent='Rayon sélectionné : '+snapshot.radius.toLocaleString('fr-FR')+' m';}
 function relevant(){if(!catalogue)return [];return category==='all'?Object.values(catalogue.items).flat():catalogue.items[category]||[];}
 function radii(){const p=position();if(!p||!catalogue||category==='transport')return null;const rows=relevant();if(category==='all'&&!core.select(rows,p,3000,Date.now(),1).length)return null;const r=core.automaticRadius(rows,p);return category==='all'?core.RADII.filter(x=>x<=r):[r];}
 function link(text,url){const a=el('a',text);a.href=core.safeUrl(url)||'#';a.target='_blank';a.rel='noopener noreferrer';return a;}
@@ -25,28 +25,50 @@ function card(p){const c=core.CATEGORIES.find(c=>c.id===p.category),a=el('articl
  detail.append(provenance);b.onclick=()=>{const id=p.category+'|'+p.id;if(expanded.has(id))expanded.delete(id);else expanded.add(id);detail.hidden=!expanded.has(id);b.setAttribute('aria-expanded',String(!detail.hidden));row1.lastChild.textContent=detail.hidden?'⌄':'⌃';};a.append(b,detail);return a;
 }
 function publishMap(){const p=position(),selected=core.CATEGORIES.filter(c=>c.id!=='transport'&&(category==='all'||category===c.id));const items=catalogue&&p&&!stopped?selected.flatMap(c=>core.select(catalogue.items[c.id]||[],p,snapshot.radius)):[];window.dispatchEvent(new CustomEvent('wenare:map-data',{detail:{source:'opportunities',revision:snapshot?.exploration?.revision,items}}));}
+// Data-driven animation only: the touch target remains fixed.
+function syncCategoryMotion(){
+ const p=position(),available=!!p&&!stopped&&snapshot?.enabled;
+ const hasCatalogue=available&&!!catalogue&&Date.now()<Date.parse(catalogue.manifest.validUntilUtc);
+ for(const b of $('domainChoices').querySelectorAll('[data-domain]')){
+  const id=b.dataset.domain;
+  const count=!available?0:id==='transport'?Math.max(0,snapshot.transportCount||0):hasCatalogue?core.select(catalogue.items[id]||[],p,snapshot.radius).length:0;
+  b.classList.toggle('has-places',count>0);
+  b.dataset.hasPlaces=String(count>0);
+  if(count){
+   const factor=Math.log2(count);
+   b.style.setProperty('--domain-shake-amp',Math.min(5,1.2+0.8*factor)+'px');
+   b.style.setProperty('--domain-shake-speed',Math.max(330,2000/(1+factor))+'ms');
+  }else{
+   b.style.removeProperty('--domain-shake-amp');
+   b.style.removeProperty('--domain-shake-speed');
+  }
+ }
+}
+function selectCategory(id){
+ if(id!=='all'&&!core.CATEGORIES.some(c=>c.id===id))return false;
+ category=id;render(true);window.WenareOverview?.refreshDomain();return true;
+}
 function render(force=false){
  window.dispatchEvent(new CustomEvent('wenare:domain',{detail:{category}}));
  const p=position(),active=category==='all'||category==='transport';$('transportOverview').hidden=!active;$('nearbyOverviewStatus').hidden=!!p&&!active;
- $('domainAll').setAttribute('aria-pressed',String(category==='all'));document.querySelectorAll('[data-domain]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.domain===category)));
+ document.querySelectorAll('[data-domain]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.domain===category)));syncCategoryMotion();
  const identity=JSON.stringify([category,snapshot?.radius,snapshot?.manualRadius,snapshot?.position?.timestamp,snapshot?.exploration?.revision,!!catalogue,error,stopped,core.parisDay()]);if(!force&&identity===key){radiusStatus();return;}key=identity;
  $('opportunityOverview').replaceChildren();publishMap();if(category==='transport'){$('domainResultsStatus').textContent='';resultCount=0;radiusStatus();return;}
  const selected=core.CATEGORIES.filter(c=>c.id!=='transport'&&(category==='all'||category===c.id));let total=0;
  for(const c of selected){const section=el('section',undefined,'opportunity-section'),h=el('h3',c.icon+' '+c.title,'opportunity-title'),rows=catalogue&&p?core.select(catalogue.items[c.id]||[],p,snapshot.radius):[];
- h.append(el('span',rows.length?' '+rows.length+' lieu'+(rows.length>1?'x':''):'' ,'opportunity-count'));section.append(h);
+ section.append(h);
  if(rows.length){total+=rows.length;rows.forEach(row=>section.append(card(row)));}
  else{let message=stopped?'Consultation arrêtée. Relocalisez-vous pour reprendre.':!p?'Localisez-vous pour découvrir les lieux proches.':error||catalogue?.errors[c.id]||(!catalogue?'Chargement des lieux…':'Aucune proposition référencée dans ce rayon. La couverture peut être partielle.');section.append(el('p',message,'opportunity-empty'));}
  $('opportunityOverview').append(section);
  }
  if(catalogue){const note=el('small','Couverture partielle · catalogue du '+new Date(catalogue.manifest.collectedAt).toLocaleDateString('fr-FR')+' · lieux référencés, disponibilités non confirmées.','opportunity-foot');$('opportunityOverview').append(note);}
  window.WenareMotion?.cards($('opportunityOverview'));
- resultCount=total;radiusStatus();$('domainResultsStatus').textContent=p&&!stopped?(category==='all'?total+' autres lieux proposés':total+' lieu'+(total>1?'x':'')+' proposé'+(total>1?'s':'')):'Position nécessaire pour les autres domaines.';
+ resultCount=total;radiusStatus();$('domainResultsStatus').textContent=p||stopped?'':'Position nécessaire pour les autres domaines.';$('domainResultsStatus').classList.toggle('is-error',!p&&!stopped);
 }
 async function load(){controller?.abort();controller=new AbortController();const mine=++request;try{const next=await core.load(controller.signal);if(mine!==request||stopped)return;catalogue=next;error=null;render(true);if(position())window.WenareOverview?.refreshDomain();}catch(e){if(mine!==request||e.name==='AbortError')return;error='Catalogue indisponible ou expiré. Réessayez avec une connexion.';render(true);}finally{if(mine===request)controller=null;}}
-for(const c of core.CATEGORIES){const b=el('button',undefined,'domain-button');b.type='button';b.dataset.domain=c.id;b.style.setProperty('--domain-color',WenarePlacesMap.COLORS[c.id]);b.setAttribute('aria-pressed','false');const icon=el('span',c.icon,'domain-icon');icon.setAttribute('aria-hidden','true');const dot=el('span',undefined,'domain-color-dot');dot.setAttribute('aria-hidden','true');b.append(icon,el('span',c.short),dot);b.onclick=()=>{category=c.id;render(true);window.WenareOverview?.refreshDomain();};$('domainChoices').append(b);}
-document.querySelector('#domainAll').onclick=()=>{category='all';render(true);window.WenareOverview?.refreshDomain();};
+for(const c of core.CATEGORIES){const b=el('button',undefined,'domain-button');b.type='button';b.dataset.domain=c.id;b.style.setProperty('--domain-color',WenarePlacesMap.COLORS[c.id]);b.setAttribute('aria-pressed','false');const icon=el('span',c.icon,'domain-icon');icon.setAttribute('aria-hidden','true');const dot=el('span',undefined,'domain-color-dot');dot.setAttribute('aria-hidden','true');const content=el('span',undefined,'domain-button-content');content.append(icon,el('span',c.short),dot);b.append(content);b.onclick=()=>selectCategory(c.id);$('domainChoices').append(b);}
 window.addEventListener('wenare:overview',e=>{snapshot=e.detail;const was=stopped;stopped=!snapshot.enabled;if(stopped){request++;controller?.abort();}else if(was&&!catalogue)load();render();});
-window.WenareOpportunitiesUI={radii,transportNeeded:()=>category==='all'||category==='transport'};
+window.WenareOpportunitiesUI={radii,selectCategory,transportNeeded:()=>category==='all'||category==='transport'};
 setInterval(()=>{if(document.hidden||stopped)return;if(catalogue&&Date.now()>=Date.parse(catalogue.manifest.validUntilUtc)){catalogue=null;error='Catalogue expiré. Relocalisez-vous avec une connexion pour l’actualiser.';}render();},60000);
 window.addEventListener('wenare:restart',()=>{if(!controller&&(!catalogue||error||Object.keys(catalogue.errors).length)){stopped=false;load();}});
 render();load();
