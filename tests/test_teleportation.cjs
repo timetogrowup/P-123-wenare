@@ -203,3 +203,11 @@ test('favorite storage failures remain explicit and can recover without losing s
  assert.equal(teleport.createFavorites(storage).read()[0].label,'Maison');
 });
 
+
+test('Paris projection maps local minutes and handles clock changes',()=>{
+ assert.deepEqual(teleport.parisInstant('2026-11-20','16:45'),{status:'ok',at:Date.parse('2026-11-20T15:45:00Z')});
+ assert.deepEqual(teleport.parisInstant('2026-07-20','16:45'),{status:'ok',at:Date.parse('2026-07-20T14:45:00Z')});
+ assert.equal(teleport.parisInstant('2026-03-29','02:30').status,'missing');
+ assert.equal(teleport.parisInstant('2026-10-25','02:30').status,'ambiguous');
+ assert.equal(teleport.parisInstant('2026-02-31','09:00').status,'invalid');
+});

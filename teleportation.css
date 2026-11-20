@@ -179,3 +179,11 @@ html body #wenareHeader[data-teleportation="true"] #openHabitualPlaces {
 .habitual-places-dialog p { line-height: 1.4; overflow-wrap: anywhere; }
 .habitual-storage-note { border-left: 3px solid var(--wenare-accent); padding-left: 8px; }
 .habitual-message:empty { display: none; }
+
+.habitual-panels { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+.habitual-moment { padding: 12px; border: 1px solid var(--wenare-accent); border-radius: 12px; }
+.habitual-moment h3 { margin-top: 0; }
+.habitual-moment label { display: block; }
+.habitual-moment input, .habitual-moment select { width: 100%; min-width: 0; }
+.habitual-row button[aria-pressed="true"] { background: var(--wenare-accent, #1659aa); color: white; }
+@media (max-width: 540px) { .habitual-panels { grid-template-columns: minmax(0, 1fr); } }
