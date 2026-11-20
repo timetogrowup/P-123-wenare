@@ -119,6 +119,7 @@ const name=process.env.MMI_BROWSER||'chromium';
   await p.locator('#habitualPlacesDialog').waitFor({state:'visible'});await p.locator('#habitualPlaceName').fill('Point de recette');await p.locator('#saveHabitualPlace').click();
   assert.match(await p.locator('#habitualPlacesMessage').innerText(),/session/);
   await p.getByRole('button',{name:'Point de recette',exact:true}).click();
+  await p.locator('#exploreHabitualPlace').click();
   await p.waitForFunction(()=>WenareTeleportationUI.read().destination?.label==='Point de recette');
   assert.equal(await p.evaluate(()=>WenareTeleportationUI.read().destination.label),'Point de recette');
   assert.deepEqual(blocked.errors,[]);await unavailable.close();
