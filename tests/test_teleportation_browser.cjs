@@ -118,7 +118,7 @@ if(require.main===module)(async()=>{
   assert.deepEqual(walk.start,origin);
   assert.equal(walk.end.lat,defense.lat);
   await button(page,'#walkingDialog','Fermer le trajet piéton');
-  await page.getByRole('button',{name:'Tout voir'}).click();
+  await page.locator('[data-domain="sport"]').click();
   await page.locator('.opportunity-name').filter({hasText:'Salle à La Défense'}).waitFor();
   await page.getByRole('button',{name:'Ouvrir la carte des lieux'}).click();
   await page.locator('#placesDialog .teleport-exploration-pin').waitFor();
