@@ -127,6 +127,7 @@ if(require.main===module)(async()=>{
   await page.locator('#openHabitualPlaces').click();
   await page.locator('#saveHabitualPlace').click();
   await page.locator('#habitualPlacesDialog').getByRole('button',{name:'Fermer',exact:true}).click();
+  await page.locator('[data-domain="transport"]').click();
   await page.locator('#returnToPosition').click();
   await page.getByRole('button',{name:/📍 Poissy/}).waitFor();
   assert.equal(await page.evaluate(()=>window.gpsCalls),2);
