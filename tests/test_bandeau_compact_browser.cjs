@@ -99,6 +99,7 @@ async function colors(page){
   // A legacy coordinate favorite is visible as a human label, yet keeps its point and id.
   await page.locator('#openHabitualPlaces').click();
   await page.getByRole('button',{name:'Point sélectionné sur la carte',exact:true}).click();
+  await page.locator('#exploreHabitualPlace').click();
   await page.waitForFunction(()=>WenareTeleportationUI.read().destination?.labelKind==='map-point');
   assert.equal(await page.evaluate(()=>WenareTeleportationUI.read().destination.labelKind),'map-point');
   assert.match(await page.locator('#wenareSituation').innerText(),/au point sélectionné sur la carte/);
