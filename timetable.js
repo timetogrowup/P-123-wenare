@@ -57,6 +57,8 @@ function response(data,query,now,groupByNextStop=false,tripCalls=null,clockSourc
  return {
   schemaVersion:1,serverTimeUtc:new Date(now).toISOString(),query:{stopId:query.stopId,lineId:query.lineId,directionId:query.directionId},
   coverage:{status:'unknown',provider:'Île-de-France Mobilités — GTFS (théorique)'},serviceStatus:departures.length?'partial':'none_announced',
+  generationId:tripCalls?.generationId||null,
+  resolveVisit(binding){if(!tripCalls||binding?.generationId!==tripCalls.generationId||binding.lineId!==query.lineId||binding.stopId!==query.stopId)return null;const hits=rows.filter(row=>row[1]===binding.serviceDate&&row[2]===binding.tripRef&&row[3]===binding.stopSequence);return hits.length===1?toEvent(hits[0]):null;},
   departures,tripChoices,nextRefreshAfterSeconds:60,validUntilUtc:data.validUntilUtc,
   ...(projected&&horizon<reference+3600000?{projectionLimit:horizon}:{})
  };

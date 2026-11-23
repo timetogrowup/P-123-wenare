@@ -105,8 +105,8 @@ test('the new shell caches all versioned scripts and styles referenced by the pa
 test('the staged client contract matches every root resource and its qualified hash',()=>{
  const fs=require('node:fs'),crypto=require('node:crypto');
  const manifest=JSON.parse(fs.readFileSync('release-client/trip-calls-release.json','utf8'));
- assert.equal(manifest.version,2);
- assert.equal(Object.keys(manifest.files).length,13);
+ assert.equal(manifest.version,3);
+ assert.equal(Object.keys(manifest.files).length,19);
  for(const [name,digest] of Object.entries(manifest.files)){
   const staged=fs.readFileSync('release-client/'+name),root=fs.readFileSync(name);
   assert.equal(crypto.createHash('sha256').update(staged).digest('hex'),digest,name+' qualified hash');

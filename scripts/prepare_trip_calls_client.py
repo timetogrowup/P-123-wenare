@@ -14,7 +14,8 @@ teleportation = {
     'teleportation.js', 'teleportation-ui.js', 'teleportation.css',
     'places-map-ui.js', 'opportunities-ui.js',
 }
-contracts = {1: trip_client, 2: trip_client | teleportation}
+realtime = {'nearby.js', 'departures-config.json', 'realtime-core.js', 'realtime-loader.js', 'realtime-ui.js', 'realtime.css'}
+contracts = {1: trip_client, 2: trip_client | teleportation, 3: trip_client | teleportation | realtime}
 if set(manifest['files']) != contracts.get(manifest['version']):
     raise ValueError('A release must contain every file of its client contract')
 if not json.loads((root/'distribution/mobility/manifest.json').read_text()).get('tripCallsManifest'):
