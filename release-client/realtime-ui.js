@@ -1,0 +1,7 @@
+(function(root){'use strict';
+const nodes=new Map();
+function update(node,view){const p=view?.pair||view;node.querySelector('.departure-theoretical').textContent=p.theoreticalLabel;const r=node.querySelector('.departure-realtime');r.textContent=p.realtimeLabel;r.dataset.state=p.rectangleState;r.setAttribute('aria-label',p.real?'Temps réel : '+p.realtimeLabel:'Temps réel indisponible');node.dataset.animation=p.animation;node.title='Horaire théorique : '+p.theoreticalLabel+(p.real?' · Estimation temps réel : '+p.realtimeLabel:' · Temps réel indisponible');return node;}
+function create(view,key,{secondary=false,sourceKey=key}={}){let node=nodes.get(key);if(!node){node=document.createElement('span');node.className='departure-pair';node.dataset.visitKey=key;const t=document.createElement('span');t.className='departure-theoretical';const r=document.createElement('span');r.className='departure-realtime';r.setAttribute('role','img');node.append(t,r);nodes.set(key,node);if(nodes.size>1000){for(const [k,n]of nodes)if(!n.isConnected)nodes.delete(k);}}node.dataset.sourceKey=sourceKey;node.classList.toggle('is-following',secondary);node.querySelector('.departure-theoretical').classList.toggle('sense-next',key.endsWith('|summary')&&!secondary);return update(node,view);}
+function refresh(views){for(const node of nodes.values()){const view=views.get(node.dataset.sourceKey);if(view&&node.isConnected)update(node,view);}}
+root.WenareRealtimeUI={create,update,refresh};
+})(globalThis);

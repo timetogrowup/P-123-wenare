@@ -12,9 +12,9 @@ function pair(theory,realtime,{now,generationId,projected=false,consultationTime
  const real=!!(!projected&&clockTrusted&&!suppressed&&boarding&&matched(theory,realtime,generationId)&&realtime.quality==='real_time'&&['estimated','at_stop'].includes(realtime.status)&&Number.isFinite(recorded)&&recorded<=now+15000&&now<until&&Number.isFinite(expected)&&(expected>now||realtime.status==='at_stop'));
  const effective=real?expected:scheduled,reference=projected?consultationTime:now,seconds=(effective-now)/1000;
  const active=!suppressed&&boarding&&Number.isFinite(effective)&&(projected?effective>=reference:effective>now||real&&realtime.status==='at_stop');
- const animation=!projected&&clockTrusted&&!motionReduced&&active&&realtime?.status!=='at_stop'&&seconds>0&&seconds<300?(real?'realtime':'theoretical'):'none';
+ const animation=!projected&&clockTrusted&&!motionReduced&&active&&!(real&&realtime.status==='at_stop')&&seconds>0&&seconds<300?(real?'realtime':'theoretical'):'none';
  const theoreticalLabel=Number.isFinite(scheduled)?(projected?new Date(scheduled).toLocaleTimeString('fr-FR',{timeZone:'Europe/Paris',hour:'2-digit',minute:'2-digit'}):compact(scheduled,now)):'—';
- return {theoreticalLabel,realtimeLabel:real?(realtime.status==='at_stop'&&expected<=now?'<1′':compact(expected,now)):'',rectangleState:real?'available':'empty',animation,real,active,cancelled:suppressed,time:effective,label:projected?theoreticalLabel:real&&realtime.status==='at_stop'?'À l’arrêt':seconds<60?'Moins d’une minute':'Dans '+Math.ceil(seconds/60)+' min',theory,realtime:real?realtime:null};
+ return {theoreticalLabel,realtimeLabel:real?(realtime.status==='at_stop'&&expected<=now?'<1′':compact(expected,now)):'',rectangleState:real?'available':'empty',animation,real,active,atStop:real&&realtime.status==='at_stop',cancelled:suppressed,time:effective,label:projected?theoreticalLabel:real&&realtime.status==='at_stop'?'À l’arrêt':seconds<60?'Moins d’une minute':'Dans '+Math.ceil(seconds/60)+' min',theory,realtime:real?realtime:null};
 }
 function merge(theories,body,options={},resolveVisit=()=>null){
  const all=new Map(theories.map(t=>[visitKey(t),t])),predictions=new Map(),cancelled=new Set();

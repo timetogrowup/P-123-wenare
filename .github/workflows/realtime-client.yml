@@ -1,0 +1,58 @@
+name: Qualifier le client temps reel
+on:
+  push:
+    branches: [recette/temps-reel, main]
+    paths: ['realtime*', 'nearby-ui.js', 'tests/test_realtime*', '.github/workflows/realtime-client.yml']
+  pull_request:
+    paths: ['realtime*', 'nearby-ui.js', 'tests/test_realtime*', '.github/workflows/realtime-client.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: realtime-client-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  client:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            /*.js
+            /*.css
+            /index.html
+            /tests/test_realtime.cjs
+            /tests/test_realtime_browser.cjs
+            /tests/test_realtime_integration_browser.cjs
+            /maquettes/temps-reel/
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verifier les regles du client sans fournisseur
+        run: node --test tests/test_realtime.cjs
+      - name: Installer les navigateurs officiels
+        run: |
+          printf '%s\n' 'https://archive.ubuntu.com/ubuntu' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
+          if [ -f /etc/apt/sources.list.d/ubuntu.sources ]; then
+            sudo sed -i 's|http://security.ubuntu.com/ubuntu|https://security.ubuntu.com/ubuntu|g' /etc/apt/sources.list.d/ubuntu.sources
+          fi
+          npm install --no-save --ignore-scripts playwright@1.62.1
+          npx playwright install --with-deps chromium webkit
+      - name: Recetter Chromium et WebKit
+        run: |
+          mkdir -p preuves/temps-reel
+          python3 -m http.server 8765 >/tmp/wenare-realtime-client.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID"' EXIT
+          curl --silent --fail --retry 5 --retry-connrefused http://127.0.0.1:8765/ -o /dev/null
+          node tests/test_realtime_browser.cjs
+          node tests/test_realtime_integration_browser.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: realtime-client-browser-proof
+          path: preuves/temps-reel/
+          if-no-files-found: ignore
+          retention-days: 7
