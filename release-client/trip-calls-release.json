@@ -2,7 +2,7 @@
   "version": 3,
   "files": {
     "index.html": "3431f2dc9d8419ee450a455775bdadd6c754ca6eb134ad4b4227d88a30d2e323",
-    "nearby-ui.js": "7b60b18e39c7966e010b14ef3b7d1c848cfa3e6b8e957c8015e762ce83d8ece2",
+    "nearby-ui.js": "7f5476683427589cac2ccf0b6d8d462e91c81458c5ded6d30843a64d8fbafb1b",
     "timetable.js": "a85202b65b1640d0cef5695ef54131c78eb32dea3a52ce4e752d57154d36b0be",
     "sw.js": "fe5d84a4072c1dcd8ee01ada527d35443b77b1e282e3bf82d560480db9586876",
     "trip-calls-core.js": "59f505f5eaac8950bee7c0f23f0b2731c1b9faf21ac2ca9d5d1a933b7fc77f46",

@@ -95,6 +95,7 @@ jobs:
           git add distribution/
           git add index.html nearby-ui.js timetable.js sw.js trip-calls-core.js trip-calls-loader.js trip-calls-ui.js trip-calls.css
           git add teleportation.js teleportation-ui.js teleportation.css places-map-ui.js opportunities-ui.js
+          git add nearby.js departures-config.json realtime-core.js realtime-loader.js realtime-ui.js realtime.css
           if ! git diff --cached --quiet; then
             git commit -m "data: actualiser les horaires qualifiés de tous les bus IDFM"
             git pull --rebase origin main
