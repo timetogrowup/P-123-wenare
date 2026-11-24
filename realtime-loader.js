@@ -3,7 +3,7 @@ const serviceKey=q=>JSON.stringify([q.stopId,q.lineId,q.directionId]);
 const queryKey=q=>JSON.stringify([q.stopId,q.lineId,q.directionId,q.generationId]);
 function create({fetchImpl=fetch,mono=()=>performance.now(),wall=Date.now,configUrl='./departures-config.json',timeoutMs=10000,setTimer=setTimeout,clearTimer=clearTimeout}={}){
  let configValue=null,configUntil=-Infinity,configPending=null,signature=null,epoch=0,caps=null,capUntil=0,capPending=null,globalCooldown=0;
- let scoped=false;const decisions=new Map();
+ let discoveryBase=null,scoped=false;const decisions=new Map();
  const records=new Map(),pending=new Map(),known=new Map();
  async function json(url,init={}){const controller=new AbortController(),timer=setTimer(()=>controller.abort(),timeoutMs);try{const response=await fetchImpl(url,{...init,cache:'no-store',signal:controller.signal});return {response,body:response.ok?await response.json():null};}finally{clearTimer(timer);}}
  function put(key,record){records.delete(key);records.set(key,record);if(records.size>512)records.delete(records.keys().next().value);}
@@ -17,8 +17,12 @@ function create({fetchImpl=fetch,mono=()=>performance.now(),wall=Date.now,config
  }
  async function config({force=false}={}){
   if(configPending)return configPending;if(!force&&mono()<configUntil)return configValue;
-  configPending=(async()=>{let value=null,batch=false;try{const {response,body:c}=await json(configUrl);if(response.ok&&c?.schemaVersion===1&&c.realtime?.enabled===true&&c.realtime?.apiVersion===2&&typeof c.apiBase==='string'){const url=new URL(c.apiBase);if(url.protocol!=='https:'||url.username||url.password||url.search||url.hash||url.pathname!=='/')throw new Error('INVALID_API_BASE');{value=url.origin;batch=c.realtime.capabilityQuery===true;}}}catch{}
-   const next=JSON.stringify([value,batch]);scoped=batch;if(next!==signature){epoch++;decisions.clear();caps=null;capUntil=0;signature=next;}
+  configPending=(async()=>{let value=null,batch=false,observationBase=null;try{const {response,body:c}=await json(configUrl);if(response.ok && c?.schemaVersion===1 && c.realtime?.apiVersion===2 && c.realtime.enabled===false &&
+      c.apiBase===null && c.realtime.discoveryBase==='https://wenare-passages.onrender.com') {
+     observationBase=c.realtime.discoveryBase;
+   }
+   if(response.ok&&c?.schemaVersion===1&&c.realtime?.enabled===true&&c.realtime?.apiVersion===2&&typeof c.apiBase==='string'){const url=new URL(c.apiBase);if(url.protocol!=='https:'||url.username||url.password||url.search||url.hash||url.pathname!=='/')throw new Error('INVALID_API_BASE');{value=url.origin;batch=c.realtime.capabilityQuery===true;}}}catch{}
+   const next=JSON.stringify([value,batch,observationBase]);scoped=batch||Boolean(observationBase);discoveryBase=observationBase;if(next!==signature){epoch++;decisions.clear();caps=null;capUntil=0;signature=next;}
    configValue=value;configUntil=mono()+60000;return value;
   })().finally(()=>{configPending=null;});return configPending;
  }
@@ -29,8 +33,8 @@ function create({fetchImpl=fetch,mono=()=>performance.now(),wall=Date.now,config
   })().finally(()=>{capPending=null;});return capPending;
  }
  async function prepare(queries,signal){
-  if(!scoped||!configValue||signal?.aborted)return;
-  const mine=epoch,base=configValue,groups=new Map();
+  if(!scoped||!(configValue||discoveryBase)||signal?.aborted)return;
+  const mine=epoch,base=configValue||discoveryBase,groups=new Map();
   for(const q of queries){
    if((decisions.get(queryKey(q))?.until??0)>mono())continue;
    if(!groups.has(q.generationId))groups.set(q.generationId,new Map());
@@ -44,7 +48,7 @@ function create({fetchImpl=fetch,mono=()=>performance.now(),wall=Date.now,config
     let allowed=new Set();
     try{
      const {response,body}=await json(base+'/api/v2/capabilities/query',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({generationId,services})});
-     if(response.status===404||response.status===405){
+     if(configValue && (response.status===404||response.status===405)){
       const legacy=await capabilities(base);
       if(legacy.generations.includes(generationId))allowed=new Set(legacy.services.filter(s=>['covered','partial'].includes(s.coverage)).map(serviceKey));
      }else if(response.ok&&body?.schemaVersion===2&&body.generationId===generationId&&typeof body.registryVersion==='string'&&Array.isArray(body.services)&&body.services.length===batch.length){

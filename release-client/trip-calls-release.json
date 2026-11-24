@@ -15,9 +15,9 @@
     "places-map-ui.js": "bf67112eb2a7f693f5770fe85426248b01a50579d055389da04c5fdf208e92fb",
     "opportunities-ui.js": "b7c11a0527062be0477e1c418bcd206aa46c24f0f5e208dfa0125a9454a12d2e",
     "nearby.js": "ddeede0f0e6089921458bda91ad93d74524546c72f219fbecf2fe7eb8f64a206",
-    "departures-config.json": "c69c558ec28704a90f9c0da81cde54fe30d81ca2c5b2ecdb73c11fbea5518c5a",
+    "departures-config.json": "fb37f4720caec03cd316d9091fac8f1148018184df9a4af80c66bdc13e252f4c",
     "realtime-core.js": "0627497ff85e207aaf1cc17f78a3e60d1bf87de8adeb0c241f722b9149fbe783",
-    "realtime-loader.js": "f8914f1c37cc40206e2ea95b6425302bf79981ae25b66d546dfabc2bf8f43497",
+    "realtime-loader.js": "d9cfe9366be1eaed6317ae19635469694f583f73716d324f2da401750abdd62f",
     "realtime-ui.js": "69b6d24a8e062bd5edefa686980b2469c5416d936837d39d86b8118fb99e9ebb",
     "realtime.css": "f4d60bc91faebdaab7798db1d232391d755257ef283be96dd797b9453a504df8"
   }

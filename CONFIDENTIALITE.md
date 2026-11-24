@@ -33,3 +33,7 @@ Le bouton Carte ouvre un plan vectoriel IGN/Géoplateforme des lieux déjà sél
 
 ## Ambiances et cartes vectorielles — v30
 Les douze styles sont appliqués localement aux mêmes géométries IGN : choisir une ambiance ne transmet ni position supplémentaire ni préférence à un service de personnalisation. Le fond vectoriel est dessiné en Canvas sur l’appareil ; IGN/Géoplateforme fournit le style, les glyphes, sprites et tuiles, et jsDelivr les deux bibliothèques à versions fixes. Les règles de connexion ci-dessus s’appliquent. Le GPS automatique attend le clic sur le rouleau d’entrée. Aucun historique des ambiances n’est enregistré par WENARE.
+
+## Disponibilité des prochains passages
+
+À l’heure actuelle, les passages visibles peuvent déclencher une demande de disponibilité auprès du serveur WENARE hébergé sur Render. La demande contient la version des horaires et les identifiants de l’arrêt, de la ligne et de la direction. Ces éléments peuvent révéler le secteur consulté. Les coordonnées GPS et les identifiants de voyageur sont exclus du message. WENARE compte les consultations par ligne et version des horaires. Une consultation à une heure projetée utilise les horaires officiels sur l’appareil.

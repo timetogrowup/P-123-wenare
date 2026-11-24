@@ -89,3 +89,21 @@ test('scoped discovery keeps the remaining reader and skips departures after all
     assert.equal(departures,keepSecond?1:0);
   }
 });
+
+test('closed observation wave sends only scoped discovery even if the operator flow is open', async () => {
+  let discoveryBase='https://wenare-passages.onrender.com';
+  let calls=[];
+  const loader=create({fetchImpl:async url=>{
+    if(url.endsWith('departures-config.json')) return Response.json({schemaVersion:1,apiBase:null,realtime:{enabled:false,apiVersion:2,discoveryBase}});
+    calls.push(url);
+    return Response.json({schemaVersion:2,generationId,registryVersion:'fixture',services:[{...query,coverage:'covered'}]});
+  }});
+  assert.equal(await loader.config(),null);
+  await loader.prepare([query,query]);
+  assert.equal(await loader.read(query),null);
+  assert.deepEqual(calls,[discoveryBase+'/api/v2/capabilities/query']);
+  discoveryBase='https://other.example';
+  await loader.config({force:true});
+  await loader.prepare([query]);
+  assert.equal(calls.length,1);
+});
