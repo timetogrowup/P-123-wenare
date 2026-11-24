@@ -12,7 +12,7 @@ permissions:
   contents: write
   pages: write
 concurrency:
-  group: public-idfm-qualified-data
+  group: ${{ github.event_name == 'pull_request' && format('public-idfm-qualified-pr-{0}', github.event.pull_request.number) || 'public-idfm-qualified-data' }}
   cancel-in-progress: true
 jobs:
   qualify-data:
