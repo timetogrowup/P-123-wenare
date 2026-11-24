@@ -9,12 +9,13 @@ function compact(time,now){const seconds=(time-now)/1000;return seconds>0?(secon
 function pair(theory,realtime,{now,generationId,projected=false,consultationTime=null,clockTrusted=true,cancelled=false,motionReduced=false}={}){
  const scheduled=instant(theory?.scheduledTimeUtc),recorded=instant(realtime?.sourceRecordedAtUtc),until=instant(realtime?.validUntilUtc),expected=instant(realtime?.expectedTimeUtc);
  const suppressed=cancelled||theory?.status==='cancelled'||realtime?.status==='cancelled',boarding=theory?.boardingAllowed!==false&&realtime?.boardingAllowed!==false;
- const real=!!(!projected&&clockTrusted&&!suppressed&&boarding&&matched(theory,realtime,generationId)&&realtime.quality==='real_time'&&['estimated','at_stop'].includes(realtime.status)&&Number.isFinite(recorded)&&recorded<=now+15000&&now<until&&Number.isFinite(expected)&&(expected>now||realtime.status==='at_stop'));
+ const real=!!(!projected&&clockTrusted&&!suppressed&&boarding&&matched(theory,realtime,generationId)&&realtime.quality==='real_time'&&['estimated','at_stop'].includes(realtime.status)&&Number.isFinite(recorded)&&now-recorded<120000&&recorded<=now+15000&&now<until&&Number.isFinite(expected)&&(expected>now||realtime.status==='at_stop'));
  const effective=real?expected:scheduled,reference=projected?consultationTime:now,seconds=(effective-now)/1000;
  const active=!suppressed&&boarding&&Number.isFinite(effective)&&(projected?effective>=reference:effective>now||real&&realtime.status==='at_stop');
- const animation=!projected&&clockTrusted&&!motionReduced&&active&&!(real&&realtime.status==='at_stop')&&seconds>0&&seconds<300?(real?'realtime':'theoretical'):'none';
+ const animation=!projected&&clockTrusted&&!motionReduced&&active&&!(real&&realtime.status==='at_stop')&&seconds>0&&seconds<300&&real?'realtime':'none';
  const theoreticalLabel=Number.isFinite(scheduled)?(projected?new Date(scheduled).toLocaleTimeString('fr-FR',{timeZone:'Europe/Paris',hour:'2-digit',minute:'2-digit'}):compact(scheduled,now)):'—';
- return {theoreticalLabel,realtimeLabel:real?(realtime.status==='at_stop'&&expected<=now?'<1′':compact(expected,now)):'',rectangleState:real?'available':'empty',animation,real,active,atStop:real&&realtime.status==='at_stop',cancelled:suppressed,time:effective,label:projected?theoreticalLabel:real&&realtime.status==='at_stop'?'À l’arrêt':seconds<60?'Moins d’une minute':'Dans '+Math.ceil(seconds/60)+' min',theory,realtime:real?realtime:null};
+ const expired=!real&&!projected&&clockTrusted&&!suppressed&&boarding&&matched(theory,realtime,generationId)&&realtime.quality==='real_time'&&['estimated','at_stop'].includes(realtime.status)&&Number.isFinite(expected)&&now-recorded>=120000?realtime:null;
+ return {expired,theoreticalLabel,realtimeLabel:real?(realtime.status==='at_stop'&&expected<=now?'<1′':compact(expected,now)):'',rectangleState:real?'available':'empty',animation,real,active,atStop:real&&realtime.status==='at_stop',cancelled:suppressed,time:effective,label:projected?theoreticalLabel:real&&realtime.status==='at_stop'?'À l’arrêt':seconds<60?'Moins d’une minute':'Dans '+Math.ceil(seconds/60)+' min',theory,realtime:real?realtime:null};
 }
 function merge(theories,body,options={},resolveVisit=()=>null){
  const all=new Map(theories.map(t=>[visitKey(t),t])),predictions=new Map(),cancelled=new Set();
