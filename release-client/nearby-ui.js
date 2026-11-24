@@ -20,7 +20,7 @@ function scheduleRealtime(){
 window.addEventListener('scroll',scheduleRealtime,{passive:true,capture:true});
 window.addEventListener('resize',scheduleRealtime,{passive:true});
 window.addEventListener('offline',()=>realtimeScheduler?.stop());
-new MutationObserver(changes=>{
+if(realtimeScheduler)new MutationObserver(changes=>{
  if(changes.some(change=>change.target.tagName==='DIALOG'))scheduleRealtime();
 }).observe(document.body,{subtree:true,attributes:true,attributeFilter:['open']});
 function syncRealtime(){
