@@ -5,6 +5,7 @@ import pathlib
 import shutil
 import sys
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / 'scripts'))
 import prepare_realtime_publication as publisher
@@ -37,6 +38,27 @@ class PublicationTest(unittest.TestCase):
         self.assertEqual(original, {p.name: p.read_bytes() for p in (self.distribution / 'mobility').iterdir()})
         self.assertTrue((self.distribution / 'realtime-identities/generation-fixture-1/IDFM-C02565.json.gz').is_file())
         self.assertEqual(result, json.loads((self.distribution / 'realtime-identities/status.json').read_text()))
+
+    def test_regional_renewal_is_isolated_and_preserves_previous_generation(self):
+        pilot = self.prepare()
+        pilot_directory = self.distribution / 'realtime-identities'
+        before = {p: p.read_bytes() for p in pilot_directory.rglob('*') if p.is_file()}
+        target = ('IDFM:C02565', 'IDFM:23052', 'IDFM:13497')
+        with patch.object(publisher, 'RER_B_SERVICE', target):
+            first = self.prepare(regional=True)
+            self.assertTrue(first['indexReady'])
+            self.assertFalse(first['activation'])
+            self.assertEqual(first, self.prepare(regional=True))
+            self.manifest('generation-2')
+            self.assertTrue(self.prepare(regional=True)['indexReady'])
+        with patch.object(publisher, 'RER_B_SERVICE', (target[0], 'unknown', target[2])):
+            self.manifest('generation-3')
+            result = self.prepare(regional=True)
+        self.assertFalse(result['indexReady'])
+        self.assertEqual(result['warnings'], ['NO_VISITS_FOR_SCOPED_SERVICE'])
+        self.assertEqual({row['generationId'] for row in result['generations']},
+                         {pilot['generationId'], 'generation-2'})
+        self.assertEqual(before, {p: p.read_bytes() for p in pilot_directory.rglob('*') if p.is_file()})
 
     def test_missing_archive_does_not_block_valid_theoretical_generation(self):
         self.fixture.archive.unlink(); result = self.prepare()
