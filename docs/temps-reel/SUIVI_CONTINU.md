@@ -1,6 +1,6 @@
 # Temps réel continu — suivi public
 
-24 novembre 2026. État : **client 52 publié et vérifié ; index quotidiens publiés ; affichage temps réel public désactivé**.
+24 novembre 2026. État : **client 56 publié, deux générations régionales vérifiées, estimations voyageurs fermées**.
 
 La conception, les décisions et les preuves privées sont conservées dans le [journal d'exécution du dépôt source](https://github.com/timetogrowup/P-124-wenare-source/blob/main/ETUDES/2026-11-24_TEMPS_REEL_EXECUTION_CONTINUE.md), avec besoins, spécification et stratégie. La maquette validée est conservée.
 
@@ -104,3 +104,22 @@ Le site public sert le cache v55 et la configuration de découverte à la demand
 ### 24 novembre, première période de demande régionale
 
 Du 24 novembre 2026 à 17 h 04 min 16 s à 17 h 18 incluses (Paris), le journal applicatif de l’instance ne contient aucun agrégat de consultation régionale après la recette. Zéro desserte observée sur cet intervalle. Avec un dénominateur nul, le pourcentage de passages affichés en rouge est indéterminé. Les horaires officiels restent disponibles. Le [statut du premier paquet régional](../../distribution/realtime-identities-regional/status.json) a été vérifié sur Pages pour le 6501, le RER A et le RER B ; il indique que l’index est disponible et que l’activation est fermée. Quatre visites du RER B ont été retrouvées lors d’un rejeu isolé sur cette génération publiée.
+
+### 24 novembre 2026, contrôle de distribution à 18 h 21 (Paris)
+
+Le [registre par ligne](../../distribution/realtime-coverage/lignes.csv.gz) et son [manifeste par mode](../../distribution/realtime-coverage/manifest.json) ont été téléchargés depuis Pages. Chaque ligne dispose d'un état de preuve et d'une condition de réexamen. Les totaux du CSV concordent avec ceux du manifeste pour la génération 20261124T162752772358Z-b49e8447ed10.
+
+| Mode | Lignes | Avec desserte | Combinaisons ligne–arrêt–direction |
+|---|---:|---:|---:|
+| Bus | 2 064 | 1 869 | 88 151 |
+| Navette | 2 | 2 | 12 |
+| Métro | 16 | 16 | 940 |
+| Funiculaire | 1 | 1 | 2 |
+| Tramway | 15 | 15 | 1 086 |
+| RER | 5 | 5 | 1 594 |
+| Train | 9 | 9 | 755 |
+| TER | 11 | 10 | 218 |
+| Câble | 1 | 1 | 8 |
+| **Total** | **2 124** | **1 928** | **92 766** |
+
+Les deux générations du [statut régional](../../distribution/realtime-identities-regional/status.json) ont chacune trois index vérifiés. Ces effectifs décrivent les horaires publiés. Les estimations voyageurs restent fermées. Le taux de passages affichés en rouge reste indéterminé pour la période de demande indiquée ci-dessus.
