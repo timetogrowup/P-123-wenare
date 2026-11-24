@@ -5,14 +5,15 @@
 html[data-theme=dark]{color-scheme:dark;--bg:#12211b;--card:#1d3027;--ink:#eff9f0;--muted:#c0d1c6;--edge:#486255;--accent:#ace5c3;--soft:#294b39}
 *{box-sizing:border-box}body{max-width:680px;margin:auto;padding:22px 16px 36px}header,.tools,.passes,.direction{display:flex;align-items:center;gap:10px;flex-wrap:wrap}header{justify-content:space-between}a{color:var(--accent)}h1{font-size:1.65rem;margin:26px 0 4px}h2{margin:0;font-size:1.35rem}p{line-height:1.5}button,select{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--edge);border-radius:8px;padding:8px 10px}button{cursor:pointer}button:focus-visible,select:focus-visible,a:focus-visible{outline:3px solid #4084c2;outline-offset:3px}.note,small{color:var(--muted)}.note{margin:0 0 16px}.card,dialog{border:1px solid var(--edge);background:var(--card);border-radius:16px;color:var(--ink)}.card{padding:18px}.direction{margin:10px 0 18px}.badge{border-radius:6px;background:#80bb61;color:#122519;font-weight:750;padding:3px 8px}.passes{gap:26px}.slot{display:grid;gap:3px;justify-items:start}.tap{border:0;background:transparent;padding:8px 0;min-height:44px}.block{display:inline-grid;place-items:center;width:56px;height:24px;border-radius:5px;background:#dcfce7;color:#14261a;border:1px solid #93c6a6;font-weight:750;line-height:1;font-variant-numeric:tabular-nums}.block.live{color:#9d1728}.urgent{animation:shake 2.4s ease-in-out infinite}@keyframes shake{0%,18%,100%{transform:translateX(0)}4%,12%{transform:translateX(-2px)}8%,16%{transform:translateX(2px)}}@media(prefers-reduced-motion:reduce){.urgent{animation:none}}
 .legend{margin:12px 0 0;font-size:.88rem;color:var(--muted)}.tools{margin:14px 0}.tools label{display:grid;gap:4px}.tools button[aria-pressed=true]{background:var(--soft)}dialog{width:min(95vw,500px);padding:18px;max-height:90dvh;overflow:auto}dialog::backdrop{background:#10251cc2}dialog h2{font-size:1.15rem}table{width:100%;border-collapse:collapse;font-size:.9rem}th,td{text-align:left;padding:9px 4px;border-bottom:1px solid var(--edge);vertical-align:top}td small{display:block}tr.selected{background:var(--soft)}.why{line-height:1.5}dialog button{float:right}
+dialog::backdrop{background:#10251c96}dialog{padding:clamp(14px,4vw,24px)}dialog h2{font-size:1.35rem}dialog .route{margin:.4rem 0 1rem}.chosen{display:flex;gap:12px;align-items:center;padding:12px 0;border-block:1px solid var(--edge);margin-bottom:14px}.chosen strong{font-size:.95rem}dialog .why{border-left:3px solid var(--accent);padding:4px 0 4px 12px;margin:16px 0}dialog tr.selected th{color:var(--accent)}dialog td small{margin-top:3px}dialog button{min-height:44px}
 </style></head><body>
 <header><a href="../../">← Wenare</a><button id="theme">Changer de thème</button></header>
 <h1>Prochains passages</h1><p class="note">Maquette interactive · horaires fictifs</p>
 <main><section class="card"><h2>Reine Blanche</h2><p class="direction"><span class="badge">6501</span> → Maison des Insectes</p><div class="passes" id="passes"></div>
-<p class="legend">Rouge : estimation temps réel. Noir : horaire officiel. Touchez un chiffre pour voir les horaires.</p></section>
+</section>
 <div class="tools"><label>Scénario<select id="scenario"><option value="normal">Deux bus à Reine Blanche</option><option value="imminent">Estimation à 2 minutes</option><option value="limit">Estimation à 5 minutes</option><option value="delay">Passage retardé à 8 minutes</option><option value="past">Horaire officiel déjà passé</option></select></label></div>
 <div class="tools"><button id="expiry" aria-pressed="false">Simuler l’expiration</button><button id="projection" aria-pressed="false">Se projeter à 12 h 15</button></div><small id="clock" role="status"></small></main>
-<dialog id="detail" aria-labelledby="title"><h2 id="title">Détail du passage</h2><p>Reine Blanche · 6501 → Maison des Insectes</p><table><thead><tr><th scope="col">Passage</th><th scope="col">Officiel</th><th scope="col">Estimation</th></tr></thead><tbody id="rows"></tbody></table><p id="why" class="why"></p><form method="dialog"><button autofocus>Fermer</button></form></dialog>
+<dialog id="detail" aria-labelledby="title"><h2 id="title">Reine Blanche</h2><p class="route"><span class="badge">6501</span> → Maison des Insectes</p><div class="chosen"><span id="chosen" class="block"></span><strong id="source"></strong></div><table><thead><tr><th scope="col">Passage</th><th scope="col">Officiel</th><th scope="col">Estimation</th></tr></thead><tbody id="rows"></tbody></table><p id="why" class="why"></p><form method="dialog"><button autofocus>Fermer</button></form></dialog>
 <script>
 const $=id=>document.getElementById(id);
 const minute=60, base=(11*60+42)*minute, projectedAt=(12*60+15)*minute;
@@ -50,6 +51,8 @@ function render(){
 }
 function show(index,button){
   opener=button;const {list,ref}=state(),v=list[index],m=model(v,ref,projected);$('rows').replaceChildren();
+  $('chosen').textContent=m.value;$('chosen').className='block'+(m.live?' live':'');
+  $('source').textContent=m.live?'Estimation temps réel':'Horaire officiel';
   for(const [delta,name] of [[-1,'Précédent'],[0,'Sélectionné'],[1,'Suivant']]){
     const item=list[index+delta],tr=document.createElement('tr');if(!delta)tr.className='selected';
     const head=document.createElement('th');head.scope='row';head.textContent=name;const off=document.createElement('td'),eta=document.createElement('td');
@@ -74,4 +77,8 @@ $('expiry').onclick=()=>{expired=!expired;render();};
 $('projection').onclick=()=>{projected=!projected;render();};
 $('scenario').onchange=()=>{expired=false;projected=false;render();};
 render();
+if(new URLSearchParams(location.search).get('detail')==='suivant'){
+  const button=$('passes').querySelectorAll('button')[1];
+  if(button)button.click();
+}
 </script></body></html>
