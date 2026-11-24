@@ -97,7 +97,8 @@ function create({fetchImpl=fetch,mono=()=>performance.now(),wall=Date.now,config
   }catch(error){if(error.message==='NO_ACTIVE_READERS')return present(previous);const record=safe(query,previous,{retire:mine!==epoch,reason:error.message});record.refreshMono=Math.max(globalCooldown,mono()+60000);record.epoch=epoch;put(key,record);return present(record);}})().finally(()=>pending.delete(key));
   entry.promise=request;pending.set(key,entry);return join(entry,signal);
  }
- return {read,config,prepare,configDelay:()=>Math.max(0,configUntil-mono()),nextDelay:query=>Math.max(0,Math.max(globalCooldown,records.get(queryKey(query))?.refreshMono||mono())-mono()),invalidateConfig(){configUntil=-Infinity;},clear(){decisions.clear();for(const [key,record]of records)if(record.blocked)record.refreshMono=0;else records.delete(key);caps=null;capUntil=0;configUntil=-Infinity;}};
+ function cached(query){return present(safe(query,records.get(queryKey(query)),{retire:configValue===null}));}
+ return {read,cached,config,prepare,configDelay:()=>Math.max(0,configUntil-mono()),nextDelay:query=>Math.max(0,Math.max(globalCooldown,records.get(queryKey(query))?.refreshMono||mono())-mono()),invalidateConfig(){configUntil=-Infinity;},clear(){decisions.clear();for(const [key,record]of records)if(record.blocked)record.refreshMono=0;else records.delete(key);caps=null;capUntil=0;configUntil=-Infinity;}};
 }
 function createScheduler({loader,onRecord,isActive=()=>true,mono=()=>performance.now(),setTimer=setTimeout,clearTimer=clearTimeout}={}){
  let targets=[],revision=null,signature=null,timer=null,pending=false,epoch=0,rerun=false,controller=null;
