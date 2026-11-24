@@ -25,3 +25,90 @@ test('RT07 timetable resolves an identified past visit before its future filter'
 
 test('RT26 explicit fresh at-stop remains visible in nearby selection after ETA',()=>{const nearby=require('../nearby.js'),v=rt.pair(theory(),{...live(),status:'at_stop',expectedTimeUtc:iso(now-1000)},options);assert.equal(nearby.imminent(v,now),true);assert.equal(v.animation,'none');});
 test('RT11/19 expired or unusable at-stop restores theoretical imminence',()=>{for(const extra of [{validUntilUtc:iso(now)},{quality:'stale'},{sourceRecordedAtUtc:null},{binding:{...live().binding,generationId:'other'}}]){const p=rt.pair(theory(2),{...live(),status:'at_stop',...extra},options);assert.equal(p.real,false);assert.equal(p.rectangleState,'empty');assert.equal(p.realtimeLabel,'');assert.equal(p.active,true);assert.equal(p.animation,'none');}});
+
+test('regional discovery batches visible services and reuses decisions within the minute',async()=>{
+ const batches=[],departures=[];
+ const loader=create({wall:()=>now,mono:()=>0,fetchImpl:async(url,init)=>{
+  if(url.includes('config.json'))return Response.json({schemaVersion:1,apiBase:'https://api.example',realtime:{enabled:true,apiVersion:2,capabilityQuery:true}});
+  if(url.endsWith('/capabilities/query')){
+   const request=JSON.parse(init.body);batches.push(request);
+   return Response.json({schemaVersion:2,registryVersion:'fixture',generationId,services:request.services.map(s=>({...s,coverage:s.stopId===query.stopId?'covered':'unknown'}))});
+  }
+  departures.push(url);return Response.json(body());
+ }});
+ const queries=[query,...Array.from({length:35},(_,i)=>({...query,stopId:'other-'+i}))];
+ await loader.config();await loader.prepare([...queries,query]);
+ assert.deepEqual(batches.map(b=>b.services.length),[32,4]);
+ await loader.read(query);await loader.read(queries[1]);await loader.prepare(queries);
+ assert.equal(batches.length,2);assert.equal(departures.length,1);
+ assert.ok(departures[0].includes('/departures?'));
+});
+
+test('regional discovery accepts a compatible legacy server and fails closed on a malformed response',async()=>{
+ for(const fallback of [true,false]){
+  let trips=0;const loader=create({wall:()=>now,mono:()=>0,fetchImpl:async url=>{
+   if(url.includes('config.json'))return Response.json({schemaVersion:1,apiBase:'https://api.example',realtime:{enabled:true,apiVersion:2,capabilityQuery:true}});
+   if(url.endsWith('/query'))return fallback?new Response('',{status:404}):Response.json({schemaVersion:2,generationId:'other',services:[]});
+   if(url.endsWith('/capabilities'))return Response.json({schemaVersion:2,generations:[generationId],services:[{...query,coverage:'covered'}]});
+   trips++;return Response.json(body());
+  }});
+  await loader.read(query);assert.equal(trips,fallback?1:0);
+ }
+});
+
+test('scoped discovery keeps the remaining reader and skips departures after all readers leave', async () => {
+  for (const keepSecond of [true,false]) {
+    let signalStarted, release;
+    const started = new Promise(resolve => {signalStarted=resolve;});
+    const gate = new Promise(resolve => {release=resolve;});
+    let discoveries=0, departures=0;
+    const loader=create({fetchImpl:async url=>{
+      if(url.endsWith('departures-config.json')) return Response.json({schemaVersion:1,apiBase:'https://fixture.example',realtime:{enabled:true,apiVersion:2,capabilityQuery:true}});
+      if(url.endsWith('/capabilities/query')){
+        discoveries++;
+        signalStarted();
+        await gate;
+        return Response.json({schemaVersion:2,generationId,registryVersion:'fixture',services:[{...query,coverage:'covered'}]});
+      }
+      assert.ok(url.includes('/api/v2/departures?'));
+      departures++;
+      return Response.json(body());
+    }});
+    const first=new AbortController(), second=new AbortController();
+    const one=loader.read(query,{signal:first.signal});
+    await started;
+    const two=loader.read(query,{signal:second.signal});
+    await new Promise(resolve=>setImmediate(resolve));
+    first.abort();
+    await assert.rejects(one,/ABORTED/);
+    if(!keepSecond){second.abort();await assert.rejects(two,/ABORTED/);}
+    release();
+    if(keepSecond) assert.equal((await two)?.body?.departures.length,1);
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(discoveries,1);
+    assert.equal(departures,keepSecond?1:0);
+  }
+});
+
+test('closed observation wave sends only scoped discovery even if the operator flow is open', async () => {
+  let discoveryBase='https://wenare-passages.onrender.com';
+  let calls=[];
+  const fetchImpl=async url=>{
+    if(url.endsWith('departures-config.json')) return Response.json({schemaVersion:1,apiBase:null,realtime:{enabled:false,apiVersion:2,discoveryBase}});
+    calls.push(url);
+    return Response.json({schemaVersion:2,generationId,registryVersion:'fixture',services:[{...query,coverage:'covered'}]});
+  };
+  const local=create({fetchImpl,clientUrl:'http://localhost:8765/'});
+  assert.equal(await local.config(),null);
+  await local.prepare([query]);
+  assert.deepEqual(calls,[]);
+  const loader=create({fetchImpl,clientUrl:'https://timetogrowup.github.io/P-123-wenare/'});
+  assert.equal(await loader.config(),null);
+  await loader.prepare([query,query]);
+  assert.equal(await loader.read(query),null);
+  assert.deepEqual(calls,[discoveryBase+'/api/v2/capabilities/query']);
+  discoveryBase='https://other.example';
+  await loader.config({force:true});
+  await loader.prepare([query]);
+  assert.equal(calls.length,1);
+});
