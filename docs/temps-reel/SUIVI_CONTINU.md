@@ -77,3 +77,9 @@ Les données publiques de la génération `20261124T133205920626Z-b49e8447ed10` 
 | **Total** | **2 124** | **1 928** | **92 766** |
 
 196 lignes seront réexaminées au renouvellement du catalogue (195 bus, un TER). Parmi les 1 928 lignes avec desserte, une dispose d’une référence directe archivée pour un trajet, le 6501. Les 1 927 autres attendent une preuve de rattachement et de fraîcheur. Les horaires officiels restent affichés pour chaque passage disponible.
+
+### 24 novembre, 15 h 50 (Paris)
+
+Le serveur de découverte régionale est en production. Il a répondu aux 416 décisions attendues lors de 13 consultations portant sur 32 dessertes des neuf modes, alors que le service public était fermé aux estimations. Le client public reste en version 54 à ce point.
+
+Sur le bus 6502 à Poissy vers Les Ouches, quatre visites officiellement identifiées correspondaient à des annulations, avec des observations âgées de 826 à 3 577 secondes. Aucune estimation fraîche affichable. Sur les 2 124 lignes, 196 sont sans desserte dans la génération, 1 926 lignes avec desserte attendent une preuve directe de visite, une ligne (6502) dispose de cette preuve sans estimation exploitable et une ligne (6501) dispose aussi d’une estimation fraîche en recette antérieure. Le taux de couverture des consultations des voyageurs reste à mesurer après ouverture. Les fichiers d’horaires des bus 6502 et 6503, du RER B et du train J ont été vérifiés pour préparer cette qualification.
