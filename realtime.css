@@ -1,9 +1,9 @@
-.sense-time{flex-wrap:wrap;row-gap:.3rem;column-gap:.35rem}
-.sense-time .sense-following{display:inline-flex;align-items:center;gap:.15rem;margin:0}
+.sense-time{column-gap:2px}
+.sense-time .sense-following{display:inline-flex;align-items:center;gap:0;margin:0;white-space:nowrap}
 .sense-cell{min-width:0}.line-senses-row .sense-name{min-width:0}
 .line-senses-row .sense-cell{flex-direction:column;align-items:stretch;gap:.25rem;overflow:visible;white-space:normal}
 .line-senses-row .sense-name{flex:none;white-space:nowrap}
-.line-senses-row .sense-time{display:flex;flex-shrink:1;flex-wrap:wrap;align-items:center;min-width:0}
+.line-senses-row .sense-time{display:flex;flex-shrink:1;flex-wrap:nowrap;align-items:center;min-width:0;white-space:nowrap}
 
 .place-summary .line-senses-row{height:auto;min-height:26px;overflow:visible;align-items:center}
 
@@ -24,3 +24,14 @@
 #passage-detail .selected{background:#e4f1e9}
 #passage-detail .why{border-left:3px solid #176346;padding-left:12px;line-height:1.5}
 #passage-detail form{text-align:right}
+
+/* Base the two-direction layout on the space inside the stop card. */
+.place-summary{container-type:inline-size}
+.place-summary .compact-line{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;height:24px;min-height:24px;padding-block:0;line-height:1}
+.place-summary .sense-time .passage-chip{flex:none}
+@container (max-width:335px){
+ .place-summary .line-senses-row{grid-template-columns:48px minmax(0,1fr);gap:3px 6px;margin-block:3px}
+ .line-senses-row .compact-line{grid-column:1;grid-row:1}
+ .place-summary .line-senses-row .sense-cell{grid-column:2;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:3px;border:0;padding:0}
+ .place-summary .line-senses-row .sense-empty{display:none}
+}

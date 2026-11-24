@@ -1,10 +1,10 @@
 {
   "version": 3,
   "files": {
-    "index.html": "bce78378bd9844d8a8bdd73c4a5fed040caad728eb941ee6d395847532a90484",
+    "index.html": "3375edfdef4bfa0cf764a8a11deb19b519932443df4da2c8237bf259c03d18ba",
     "nearby-ui.js": "353d33cd6b8f236bdb676a3449fc3148255518abcc855d36754ff0db26ba1273",
     "timetable.js": "c824479e2f53d63f107748db341e404f46f6b301474aa54316ada2756d6f3f52",
-    "sw.js": "e40e0f3d576cf8c72c5ab990564a0295c818b847302416098dcb6436a89b092a",
+    "sw.js": "d401de296eb0491e0762c620969b451c2a87b7a878ef05d3184d920869227067",
     "trip-calls-core.js": "59f505f5eaac8950bee7c0f23f0b2731c1b9faf21ac2ca9d5d1a933b7fc77f46",
     "trip-calls-loader.js": "ed675aeec5a20b37f0f74d251277d83cd9d4196ca3900136d912c5abdead8c41",
     "trip-calls-ui.js": "46be8029c0a2c365aa76f689a8f10ba01a602116bda55965e098ef0f9844309c",
@@ -19,6 +19,6 @@
     "realtime-core.js": "0627497ff85e207aaf1cc17f78a3e60d1bf87de8adeb0c241f722b9149fbe783",
     "realtime-loader.js": "31db81f4c3b1558374df78db39ddbcf69d87491d2b966e9475b80dffa303b4e0",
     "realtime-ui.js": "9f6970ce45f5124ce1409141614f6d949bd4006b023a9c91e5ae33d4963890f7",
-    "realtime.css": "d1d79d21bb2f1e926a330b70b277485e444e6c831e4abc0ea0da3aa41ac01335"
+    "realtime.css": "f4d60bc91faebdaab7798db1d232391d755257ef283be96dd797b9453a504df8"
   }
 }
