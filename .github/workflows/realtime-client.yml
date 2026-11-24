@@ -1,7 +1,7 @@
 name: Qualifier le client temps reel
 on:
   push:
-    branches: [recette/temps-reel, main]
+    branches: [recette/temps-reel, recette/temps-reel-continu, main]
     paths: ['realtime*', 'nearby-ui.js', 'tests/test_realtime*', '.github/workflows/realtime-client.yml']
   pull_request:
     paths: ['realtime*', 'nearby-ui.js', 'tests/test_realtime*', '.github/workflows/realtime-client.yml']
@@ -22,6 +22,8 @@ jobs:
             /*.js
             /*.css
             /index.html
+            /tests/test_realtime_polling_browser.cjs
+            /tests/test_realtime_scheduler.cjs
             /tests/test_realtime.cjs
             /tests/test_realtime_browser.cjs
             /tests/test_realtime_integration_browser.cjs
@@ -31,7 +33,7 @@ jobs:
         with:
           node-version: '24'
       - name: Verifier les regles du client sans fournisseur
-        run: node --test tests/test_realtime.cjs
+        run: node --test tests/test_realtime.cjs tests/test_realtime_scheduler.cjs
       - name: Installer les navigateurs officiels
         run: |
           printf '%s\n' 'https://archive.ubuntu.com/ubuntu' | sudo tee /etc/apt/apt-mirrors.txt >/dev/null
@@ -49,6 +51,7 @@ jobs:
           curl --silent --fail --retry 5 --retry-connrefused http://127.0.0.1:8765/ -o /dev/null
           node tests/test_realtime_browser.cjs
           node tests/test_realtime_integration_browser.cjs
+          node tests/test_realtime_polling_browser.cjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:
