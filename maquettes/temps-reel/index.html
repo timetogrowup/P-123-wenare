@@ -66,9 +66,9 @@ function show(index,button){
     tr.append(head,off,eta);$('rows').append(tr);
   }
   let why;
-  if(projected)why='La consultation est projetée à '+hhmm(ref)+'. Le bloc affiche l’heure officielle du passage.';
-  else if(m.live)why='Le bloc affiche '+m.value+' en rouge : le bus est estimé à '+hhmm(v.eta)+', selon une information reçue il y a '+m.age+' secondes. L’heure officielle est '+hhmm(v.official)+'.';
-  else why='Le bloc affiche '+m.value+' en noir d’après l’horaire officiel de '+hhmm(v.official)+'. '+(v.eta===null?'Aucune estimation n’est disponible pour ce passage.':'La dernière estimation date de '+Math.floor(m.age/60)+' min '+m.age%60+' s et a dépassé le seuil de fraîcheur.');
+  if(projected)why='La consultation est projetée à '+hhmm(ref)+'. Wenare affiche l’heure officielle du passage.';
+  else if(m.live)why='Wenare affiche '+m.value+' en rouge : le bus est estimé à '+hhmm(v.eta)+', selon une information reçue il y a '+m.age+' secondes. L’heure officielle est '+hhmm(v.official)+'.';
+  else why='Wenare affiche '+m.value+' en noir d’après l’horaire officiel de '+hhmm(v.official)+'. '+(v.eta===null?'Aucune estimation n’est disponible pour ce passage.':'La dernière estimation date de '+Math.floor(m.age/60)+' min '+m.age%60+' s et a dépassé le seuil de fraîcheur.');
   $('why').textContent=why;$('detail').showModal();
 }
 $('detail').addEventListener('close',()=>opener?.focus());
