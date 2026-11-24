@@ -22,3 +22,23 @@ test('D06 a generation change with a known unresolved cancellation blocks the se
 test('D06 expired/failed responses preserve source timestamps without extending validity',async()=>{const h=harness();const first=await h.loader.read(query);h.state.response=()=>new Response('',{status:503});await h.c.advance(30001);const failed=await h.loader.read(query);assert.equal(failed.body.departures[0].validUntilUtc,first.body.departures[0].validUntilUtc);assert.deepEqual(failed.clock,first.clock);});
 test('D06 the scheduler limits concurrent fetches to two and removes duplicate targets',async()=>{const queries=Array.from({length:5},(_,i)=>({...query,stopId:'stop-'+i})),h=harness({queries});let concurrent=0,max=0;h.state.response=q=>new Promise(resolve=>{concurrent++;max=Math.max(max,concurrent);h.c.setTimer(()=>{concurrent--;resolve(Response.json(body(q,h.c.wall())));},5);});const {driver}=scheduler(h);driver.update([...queries,...queries]);await h.c.advance(50);assert.equal(h.calls.api,5);assert.equal(max,2);driver.stop();});
 test('D06 changing the active generation while a request is in flight never applies its result to the new revision',async()=>{const next={...query,generationId:'generation-2'},h=harness({queries:[query,next]});let release;h.state.response=q=>q.generationId===query.generationId?new Promise(resolve=>{release=()=>resolve(Response.json(body(q,h.c.wall())));}):Response.json(body(q,h.c.wall()));const {driver,applied}=scheduler(h);driver.update([query],{revision:1});await h.c.advance(1);driver.update([next],{revision:2});release();await h.c.advance(10);assert.ok(applied.length);assert.ok(applied.every(r=>r.revision===2&&r.q.generationId==='generation-2'));driver.stop();});
+
+test('counts a visit once across duplicate cards and black-to-red changes in the same UTC minute',()=>{
+ const sent=[];let time=60000;
+ const meter=require('../realtime-loader.js').createVisibleMeter({send:r=>sent.push(r),now:()=>time});
+ meter.advance();meter.see('first','bus',false);meter.see('first','bus',true);meter.see('first','bus',false);
+ meter.see('second','rer',false);time+=60000;meter.advance();meter.see('first','bus',false);meter.flush();meter.flush();
+ assert.deepEqual(sent,[[1,[['bus',1,1],['rer',1,0]]],[2,[['bus',1,0]]]]);
+});
+test('only the production page with collection enabled can report visible passages',async()=>{
+ const cfg={schemaVersion:1,apiBase:null,realtime:{enabled:false,apiVersion:2,discoveryBase:'https://wenare-passages.onrender.com',visiblePassages:true}};
+ for(const [url,flag,allowed] of [
+  ['https://timetogrowup.github.io/P-123-wenare/',true,true],
+  ['https://timetogrowup.github.io/P-123-wenare/?operateur=1',true,false],
+  ['https://timetogrowup.github.io/P-123-wenare/recette/',true,false],
+  ['https://timetogrowup.github.io/P-123-wenare/',false,false]]){
+   cfg.realtime.visiblePassages=flag;
+   const loader=create({clientUrl:url,fetchImpl:async()=>Response.json(cfg)});
+   await loader.config();assert.equal(loader.visibleMeasurement(),allowed);
+ }
+});

@@ -3,6 +3,7 @@ const serviceKey=q=>JSON.stringify([q.stopId,q.lineId,q.directionId]);
 const queryKey=q=>JSON.stringify([q.stopId,q.lineId,q.directionId,q.generationId]);
 function create({fetchImpl=fetch,mono=()=>performance.now(),wall=Date.now,configUrl='./departures-config.json',clientUrl=globalThis.location?.href,timeoutMs=10000,setTimer=setTimeout,clearTimer=clearTimeout}={}){
  let configRevision=0,configValue=null,configUntil=-Infinity,configPending=null,signature=null,epoch=0,caps=null,capUntil=0,capPending=null,globalCooldown=0;
+ let measureVisible=false;
  let discoveryBase=null,scoped=false;const decisions=new Map();
  const records=new Map(),pending=new Map(),known=new Map();
  async function json(url,init={}){const controller=new AbortController(),timer=setTimer(()=>controller.abort(),timeoutMs);try{const response=await fetchImpl(url,{...init,cache:'no-store',signal:controller.signal});return {response,body:response.ok?await response.json():null};}finally{clearTimer(timer);}}
@@ -18,13 +19,21 @@ function create({fetchImpl=fetch,mono=()=>performance.now(),wall=Date.now,config
  async function config({force=false}={}){
   if(configPending)return configPending;if(!force&&mono()<configUntil)return configValue;
   const revision=configRevision;
-  configPending=(async()=>{let value=null,batch=false,observationBase=null;try{const {response,body:c}=await json(configUrl);if(response.ok && c?.schemaVersion===1 && c.realtime?.apiVersion===2 && c.realtime.enabled===false &&
+  configPending=(async()=>{let value=null,batch=false,observationBase=null,measure=false;try{const {response,body:c}=await json(configUrl);if(response.ok && c?.schemaVersion===1 && c.realtime?.apiVersion===2 && c.realtime.enabled===false &&
       typeof clientUrl==='string' && clientUrl.startsWith('https://timetogrowup.github.io/P-123-wenare/') &&
       c.apiBase===null && c.realtime.discoveryBase==='https://wenare-passages.onrender.com') {
      observationBase=c.realtime.discoveryBase;
    }
+   if (response.ok && c?.schemaVersion === 1 && c.realtime?.apiVersion === 2 && c.realtime.visiblePassages === true && typeof clientUrl === 'string') {
+     const page = new URL(clientUrl);
+     measure = page.origin === 'https://timetogrowup.github.io' &&
+       ['/P-123-wenare/','/P-123-wenare/index.html'].includes(page.pathname) &&
+       !page.searchParams.has('operateur') && (observationBase !== null ||
+       (c.realtime.enabled === true && c.apiBase === 'https://wenare-passages.onrender.com'));
+   }
    if(response.ok&&c?.schemaVersion===1&&c.realtime?.enabled===true&&c.realtime?.apiVersion===2&&typeof c.apiBase==='string'){const url=new URL(c.apiBase);if(url.protocol!=='https:'||url.username||url.password||url.search||url.hash||url.pathname!=='/')throw new Error('INVALID_API_BASE');{value=url.origin;batch=c.realtime.capabilityQuery===true;}}}catch{}
    if(revision!==configRevision)return null;
+   measureVisible=measure;
    const next=JSON.stringify([value,batch,observationBase]);scoped=batch||Boolean(observationBase);discoveryBase=observationBase;if(next!==signature){epoch++;decisions.clear();caps=null;capUntil=0;signature=next;}
    configValue=value;configUntil=mono()+60000;return value;
   })().finally(()=>{if(revision===configRevision)configPending=null;});return configPending;
@@ -100,7 +109,7 @@ function create({fetchImpl=fetch,mono=()=>performance.now(),wall=Date.now,config
   entry.promise=request;pending.set(key,entry);return join(entry,signal);
  }
  function cached(query){return present(safe(query,null,{retire:true}));}
- return {read,cached,config,prepare,configDelay:()=>Math.max(0,configUntil-mono()),nextDelay:query=>Math.max(0,Math.max(globalCooldown,records.get(queryKey(query))?.refreshMono||mono())-mono()),invalidateConfig(){configRevision++;configPending=null;configUntil=-Infinity;},clear(){decisions.clear();for(const [key,record]of records)if(record.blocked)record.refreshMono=0;else records.delete(key);caps=null;capUntil=0;configUntil=-Infinity;}};
+ return {read,cached,config,prepare,acceptVisibleReport:()=>measureVisible && mono()<configUntil+120000,visibleMeasurement:()=>measureVisible && mono()<configUntil,configDelay:()=>Math.max(0,configUntil-mono()),nextDelay:query=>Math.max(0,Math.max(globalCooldown,records.get(queryKey(query))?.refreshMono||mono())-mono()),invalidateConfig(){configRevision++;configPending=null;configUntil=-Infinity;},clear(){decisions.clear();for(const [key,record]of records)if(record.blocked)record.refreshMono=0;else records.delete(key);caps=null;capUntil=0;configUntil=-Infinity;}};
 }
 function createScheduler({loader,onRecord,isActive=()=>true,mono=()=>performance.now(),setTimer=setTimeout,clearTimer=clearTimeout}={}){
  let targets=[],revision=null,signature=null,timer=null,pending=false,epoch=0,rerun=false,controller=null;
@@ -111,5 +120,43 @@ function createScheduler({loader,onRecord,isActive=()=>true,mono=()=>performance
  }
  return {update(queries,{revision:next=null}={}){const unique=[...new Map(queries.map(q=>[queryKey(q),q])).values()],sig=JSON.stringify([next,unique.map(queryKey)]);if(sig===signature&&targets.length)return;epoch++;controller?.abort();signature=sig;targets=unique;revision=next;if(pending)rerun=true;arm(0);},stop(){epoch++;controller?.abort();targets=[];signature=null;clearTimer(timer);timer=null;},wake(){loader.invalidateConfig();epoch++;controller?.abort();if(pending)rerun=true;arm(0);},run};
 }
-return {create,createScheduler,serviceKey};
+// Visites distinctes vues dans un onglet pendant une minute civile UTC.
+function createVisibleMeter({send,now=Date.now}) {
+ const visits=new Map();
+ let minute=null;
+ function flush() {
+   const totals=new Map();
+   for (const {mode,red} of visits.values()) {
+     const count=totals.get(mode)||[mode,0,0];
+     count[1]++; if(red)count[2]++;
+     totals.set(mode,count);
+   }
+   visits.clear();
+   if(totals.size)send([minute,[...totals.values()]]);
+ }
+ function advance() {
+   const current=Math.floor(now()/60000);
+   if(current!==minute){flush();minute=current;}
+ }
+ function see(key,mode,red) {
+   const old=visits.get(key);
+   if(old){if(red)old.red=true;return;}
+   if(visits.size<2048)visits.set(key,{mode,red});
+ }
+ return {advance,see,flush};
+}
+function sampleVisibleChips(document,innerWidth,innerHeight,see){
+ for(const node of document.querySelectorAll('#nearbyCards [data-meter-key],#railCards [data-meter-key]')){
+   const box=node.getBoundingClientRect();
+   const left=Math.max(0,box.left),right=Math.min(innerWidth,box.right);
+   const top=Math.max(0,box.top),bottom=Math.min(innerHeight,box.bottom);
+   if(left>=right || top>=bottom)continue;
+   const hit=document.elementFromPoint((left+right)/2,(top+bottom)/2);
+   if(hit && node.contains(hit)){
+     see(node.dataset.meterKey,node.dataset.meterMode,node.dataset.live==='true');
+
+   }
+ }
+}
+return {create,createScheduler,serviceKey,createVisibleMeter,sampleVisibleChips};
 });

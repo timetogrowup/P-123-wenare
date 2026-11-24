@@ -23,6 +23,7 @@ jobs:
             /*.css
             /index.html
             /tests/test_realtime_polling_browser.cjs
+            /tests/test_realtime_visible_browser.cjs
             /tests/test_realtime_scheduler.cjs
             /tests/test_realtime.cjs
             /tests/test_realtime_browser.cjs
@@ -49,6 +50,7 @@ jobs:
           SERVER_PID=$!
           trap 'kill "$SERVER_PID"' EXIT
           curl --silent --fail --retry 5 --retry-connrefused http://127.0.0.1:8765/ -o /dev/null
+          node tests/test_realtime_visible_browser.cjs
           node tests/test_realtime_browser.cjs
           node tests/test_realtime_integration_browser.cjs
           node tests/test_realtime_polling_browser.cjs
