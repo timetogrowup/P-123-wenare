@@ -93,7 +93,7 @@ if(require.main===module)(async()=>{
   page.setDefaultTimeout(10000);
   assert.equal(await page.getByRole('button',{name:'Bouger',exact:true}).getAttribute('aria-pressed'),'true');
   await page.locator('[data-radius="500"]').click();
-  await page.getByRole('button',{name:/📍 Poissy/}).click();
+  await page.getByRole('button',{name:'Poissy',exact:true}).press('Enter');
   await page.getByRole('button',{name:/RER A.*voir les arrêts/}).click();
   assert.match(await page.locator('.trip-calls-stop').first().innerText(),/La Défense.*09:21/);
   await button(page,'#tripCallsDialog','Explorer Auber');
@@ -106,7 +106,7 @@ if(require.main===module)(async()=>{
   await page.waitForFunction(()=>document.activeElement.id==='nearbyOverview');
   assert.match(await page.locator('#wenareSituation').innerText(),/Il sera 09 h 20.*La Défense/);
   assert.equal(await page.evaluate(()=>WenareTeleportationUI.read().at),arrival);
-  await page.getByRole('button',{name:/📍 La Défense/}).click();
+  await page.getByRole('button',{name:'La Défense',exact:true}).press('Enter');
   const departure=await page.locator('.departure-times').first().innerText();
   assert.match(departure,/09:20/);
   assert.match(departure,/09:23/);
@@ -129,9 +129,9 @@ if(require.main===module)(async()=>{
   await page.locator('#habitualPlacesDialog').getByRole('button',{name:'Fermer',exact:true}).click();
   await page.locator('[data-domain="transport"]').click();
   await page.locator('#returnToPosition').click();
-  await page.getByRole('button',{name:/📍 Poissy/}).waitFor();
+  await page.getByRole('button',{name:'Poissy',exact:true}).waitFor();
   assert.equal(await page.evaluate(()=>window.gpsCalls),2);
-  await page.getByRole('button',{name:/📍 Poissy/}).click();
+  await page.getByRole('button',{name:'Poissy',exact:true}).press('Enter');
   await button(page,'#nearbyCards','Explorer Poissy');
   await page.waitForFunction(()=>document.activeElement.id==='nearbyOverview');
   assert.match(await page.locator('#wenareSituation').innerText(),/Poissy/);

@@ -28,7 +28,7 @@ const {chromium,webkit}=require('playwright'),fs=require('node:fs'),assert=requi
  // The fixture remains at the same late-service instant and keeps both-sense assertions.
  await page.waitForFunction(()=>document.querySelector('#nearbyOverviewStatus').textContent.startsWith('🕒 60 prochaines minutes'));
  const pausedAt=await page.evaluate(()=>Date.now())+1000;await page.clock.pauseAt(pausedAt);
- const place=page.getByRole('button',{name:/📍 Reine Blanche/});await place.click();
+ const place=page.getByRole('button',{name:'Reine Blanche',exact:true});await place.press('Enter');
  assert.equal(await place.getAttribute('aria-expanded'),'true','Reine Blanche must be expanded before choosing a departure');
  const button=page.getByRole('button',{name:/Bus 6501 vers Maison des Insectes.*voir les arrêts/});await button.click();await ready('Maison des Insectes');
  const nextCount=await page.locator('.trip-calls-stop').count();assert.ok(nextCount>0);assert.match(await page.locator('.trip-calls-stop').last().innerText(),/Terminus/);assert.match(await page.locator('.trip-calls-stop').last().locator('.trip-calls-time').innerText(),/\d\d:\d\d/);assert.ok((await page.locator('.trip-calls-time').allTextContents()).every(s=>!/(Arrivée|départ)/i.test(s)));assert.equal(await page.evaluate(()=>window.gpsCalls),1);
