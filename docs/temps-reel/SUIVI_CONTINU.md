@@ -36,3 +36,9 @@ La campagne de qualification complémentaire n'a pas été exécutée, l'ouvertu
 ## Campagne du 24 novembre et état de production
 
 Le client 52 et ses 19 ressources ont été vérifiés sur le site publié. Les horaires et l’index ont la même génération, valable jusqu’au 28 novembre à 00 h 00 (Paris). Le contrôle serveur est refermé et les trois services V2 vérifiés renvoient REALTIME_DISABLED sans départ. Une direction atteint le seuil d’observations en recette privée. Le profil candidat, les observations et les preuves restent dans le dépôt privé. L’activation publique et le pilote de 48 h attendent le budget fournisseur et la qualification opérationnelle.
+
+## Recette du 24 novembre avant le pilote
+
+Une consultation opérateur limitée au bus 6501 de Reine Blanche vers Maison des Insectes a confirmé un passage en direct, rattaché à la visite correspondante de l’horaire publié. Le sens Saint-Germain-en-Laye et le service RER A vers Chessy sont restés fermés. La fenêtre est terminée. Le site public affiche toujours le client 52 en mode théorique.
+
+Le renouvellement réel des horaires et de leur index sera vérifié sur la prochaine génération. L’essai physique sur Samsung S24 et le suivi de 48 h restent à effectuer. Le suivi de 48 h commencera après activation publique effective. Les détails du fournisseur et les preuves de recette sont conservés dans le projet privé.
