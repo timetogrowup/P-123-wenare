@@ -37,7 +37,7 @@ async function colors(page){
   fs.mkdirSync(proofs,{recursive:true});
   const evidence={browser:browserName,baseline:baseline.sourceCommit,measurements:{},themes:{},widths:{}};
   const previous=await browser.newContext({viewport:{width:390,height:844},serviceWorkers:'block',reducedMotion:'reduce'});
-  const old=await fixture(previous,false,{'index.html':baseline.indexHtml,'teleportation.css':baseline.teleportationCss,'teleportation.js':baseline.teleportationJs,'teleportation-ui.js':baseline.teleportationUiJs,'places-map-ui.js':baseline.placesMapUiJs});
+  const old=await fixture(previous,false,{'nearby-ui.js':fs.readFileSync(require.resolve('./fixtures/nearby-ui-v46.js'),'utf8'),'index.html':baseline.indexHtml,'teleportation.css':baseline.teleportationCss,'teleportation.js':baseline.teleportationJs,'teleportation-ui.js':baseline.teleportationUiJs,'places-map-ui.js':baseline.placesMapUiJs});
   await old.page.waitForFunction(()=>document.querySelector('#wenareSituation').textContent.includes('près de'));
   await old.page.evaluate(()=>WenareThemes.select('pop'));
   evidence.measurements.oldGPS=await measure(old.page);
