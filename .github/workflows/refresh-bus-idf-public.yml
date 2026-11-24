@@ -2,7 +2,7 @@ name: Qualifier et actualiser les bus IDFM publics
 on:
   workflow_dispatch:
   pull_request:
-    paths: ['scripts/build_realtime_identities.py', 'scripts/prepare_realtime_publication.py', 'tests/test_realtime_identities.py', 'tests/test_realtime_publication.py', '.github/workflows/refresh-bus-idf-public.yml']
+    paths: ['scripts/publish_regional_coverage.mjs', 'scripts/build_realtime_identities.py', 'scripts/prepare_realtime_publication.py', 'tests/test_realtime_identities.py', 'tests/test_realtime_publication.py', '.github/workflows/refresh-bus-idf-public.yml']
   push:
     branches: [main]
     paths: ['scripts/**', 'tests/**', 'release-client/**', 'monitoring/validate_transport_reserve.py', '.github/workflows/refresh-bus-idf-public.yml']
@@ -60,6 +60,7 @@ jobs:
           python scripts/prepare_trip_calls_client.py
           python scripts/prepare_realtime_publication.py --archive .cache/gtfs-${{ steps.day.outputs.value }}.zip --distribution distribution
           python scripts/prepare_realtime_publication.py --archive .cache/gtfs-${{ steps.day.outputs.value }}.zip --distribution distribution --regional
+          node scripts/publish_regional_coverage.mjs distribution
           python monitoring/validate_transport_reserve.py
       - name: Qualifier le paquet régional sur les horaires générés
         if: github.event_name == 'pull_request'
