@@ -48,3 +48,7 @@ Le renouvellement réel des horaires et de leur index sera vérifié sur la proc
 Chaque passage présente un chiffre dans un bloc vert. Le noir correspond à l’horaire officiel. Le rouge correspond à une estimation exploitable. Toucher le bloc ouvre les horaires précédent, sélectionné et suivant, et explique l’origine de la valeur. En projection, la consultation reste théorique.
 
 Les 19 ressources publiées correspondent aux empreintes de la version. Fenêtre ouverte depuis l’application publique à Hôtel de Ville, ligne 1 vers Château de Vincennes. Les contrôles du client et les scénarios de navigateur Chromium et WebKit ont réussi ([exécution GitHub](https://github.com/timetogrowup/P-123-wenare/actions/runs/45388964130)). Le service public est en mode théorique. L’essai physique S24 du nouveau client et la vérification d’une nouvelle course après renouvellement précèdent l’ouverture du pilote 6501. Le suivi de 48 h débutera à l’activation effective.
+
+## 24 novembre — affichage mobile, livraison 54
+
+Le badge de ligne et les délais ont la même hauteur de 24 px. Les deux passages d’une direction restent côte à côte. Si la largeur intérieure est de 335 px ou moins, chaque direction dispose d’une rangée. Le contrôle de géométrie du client est passé sur Chromium et WebKit aux largeurs 320, 360, 390, 412 et 768 px ([exécution](https://github.com/timetogrowup/P-123-wenare/actions/runs/45397655383)). Les fichiers de mise en page de la livraison 54 sont servis sur GitHub Pages. Une nouvelle observation sur le téléphone de Patrick reste attendue.
