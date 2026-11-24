@@ -32,3 +32,7 @@ Client 52 inchangé : les 19 ressources HTTP sont de nouveau conformes ; horaire
 Les contrôles privés locaux ont réussi : 113 tests Node, 21 Python et démarrage des processus. Une simulation locale a mesuré la mutualisation et la désactivation, sans appel fournisseur ; elle ne prouve pas la capacité du serveur hébergé en charge. Le rejeu des preuves précédentes n'apporte aucune observation source nouvelle.
 
 La campagne de qualification complémentaire n'a pas été exécutée, l'ouverture temporaire du contrôle serveur ayant été refusée par le contrôle automatique d'approbation. Aucun nouveau déploiement serveur, profil qualifié ou pilote activé. Allocation fournisseur, parcours réel complet, recette physique Samsung S24 et pilote de 48 heures restent à acquérir. Le détail et les preuves demeurent dans le dépôt privé.
+
+## Campagne du 24 novembre et état de production
+
+Le client 52 et ses 19 ressources ont été vérifiés sur le site publié. Les horaires et l’index ont la même génération, valable jusqu’au 28 novembre à 00 h 00 (Paris). Le contrôle serveur est refermé et les trois services V2 vérifiés renvoient REALTIME_DISABLED sans départ. Une direction atteint le seuil d’observations en recette privée. Le profil candidat, les observations et les preuves restent dans le dépôt privé. L’activation publique et le pilote de 48 h attendent le budget fournisseur et la qualification opérationnelle.
