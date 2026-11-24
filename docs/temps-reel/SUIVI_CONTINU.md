@@ -58,3 +58,22 @@ Le 24 novembre, la disposition corrigée des badges et des délais a été valid
 ## 24 novembre, point d’ouverture de 15 h (Paris)
 
 La version 54 est publiée. Les 19 ressources du client et le renouvellement des horaires ont été vérifiés sur GitHub Pages. Sur le 6501 à Reine Blanche vers Maison des Insectes, cinq courses de la nouvelle génération ont pu être identifiées exactement. Au moment des deux consultations de recette, aucune estimation ne satisfaisait le critère de fraîcheur de moins de 120 secondes. L’application publique continue donc d’afficher les horaires officiels. Le pilote de 48 heures commencera uniquement après une vérification concluante. Un point en heure de pointe est programmé à 17 h aujourd’hui.
+
+## Inventaire régional du 24 novembre 2026 à 15 h 30 (Paris)
+
+Les données publiques de la génération `20261124T133205920626Z-b49e8447ed10` donnent les dénominateurs ci-dessous. Une desserte correspond à un arrêt, une ligne et une direction. La fenêtre de mesure régionale en exploitation n’a pas commencé. Le taux de passages visibles avec estimation fraîche est donc encore indéterminé pour chacun des modes.
+
+| Mode | Lignes du catalogue | Avec desserte | Dessertes |
+| --- | ---: | ---: | ---: |
+| Métro | 16 | 16 | 940 |
+| RER | 5 | 5 | 1594 |
+| Bus | 2064 | 1869 | 88151 |
+| Navette | 2 | 2 | 12 |
+| Funiculaire | 1 | 1 | 2 |
+| Train | 9 | 9 | 755 |
+| TER | 11 | 10 | 218 |
+| Tramway | 15 | 15 | 1086 |
+| Câble | 1 | 1 | 8 |
+| **Total** | **2 124** | **1 928** | **92 766** |
+
+196 lignes seront réexaminées au renouvellement du catalogue (195 bus, un TER). Parmi les 1 928 lignes avec desserte, une dispose d’une référence directe archivée pour un trajet, le 6501. Les 1 927 autres attendent une preuve de rattachement et de fraîcheur. Les horaires officiels restent affichés pour chaque passage disponible.
