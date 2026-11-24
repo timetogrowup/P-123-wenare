@@ -59,6 +59,7 @@ jobs:
           python scripts/validate_trip_calls.py
           python scripts/prepare_trip_calls_client.py
           python scripts/prepare_realtime_publication.py --archive .cache/gtfs-${{ steps.day.outputs.value }}.zip --distribution distribution
+          python scripts/prepare_realtime_publication.py --archive .cache/gtfs-${{ steps.day.outputs.value }}.zip --distribution distribution --regional
           python monitoring/validate_transport_reserve.py
       - name: Tests de non-régression
         run: |
