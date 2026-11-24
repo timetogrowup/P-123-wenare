@@ -123,3 +123,9 @@ Le [registre par ligne](../../distribution/realtime-coverage/lignes.csv.gz) et s
 | **Total** | **2 124** | **1 928** | **92 766** |
 
 Les deux générations du [statut régional](../../distribution/realtime-identities-regional/status.json) ont chacune trois index vérifiés. Ces effectifs décrivent les horaires publiés. Les estimations voyageurs restent fermées. Le taux de passages affichés en rouge reste indéterminé pour la période de demande indiquée ci-dessus.
+
+### Renouvellement du 24 novembre et mesure côté voyageurs
+
+Le [renouvellement suivant](https://github.com/timetogrowup/P-123-wenare/actions/runs/45448092030) a réussi. À 18 h 37 (Paris), la génération 20261124T172845342882Z-b49e8447ed10 est servie sur Pages. Pour les neuf modes, le registre par ligne conserve les effectifs du tableau ci-dessus. Les 196 lignes sans desserte seront réexaminées au renouvellement. L’API a chargé les deux dernières générations. Les quatre visites de référence du RER B à Gare du Nord vers Aéroport Charles de Gaulle 2 ont été retrouvées sur la génération courante en rejeu. Les voyageurs continuent de voir l’horaire officiel.
+
+Du 24 novembre 17 h 18 à 18 h 21, heure de Paris, le journal applicatif ne contient aucun agrégat de consultation voyageur. Le nombre de dessertes observées est nul sur cette période. Le taux de passages rouges est indéterminé. La recette opérateur effectuée après 18 h 21 est hors période. L’essai du 6501 sur 48 h commencera à son ouverture publique effective.
