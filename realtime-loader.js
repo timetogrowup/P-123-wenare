@@ -2,7 +2,7 @@
 const serviceKey=q=>JSON.stringify([q.stopId,q.lineId,q.directionId]);
 const queryKey=q=>JSON.stringify([q.stopId,q.lineId,q.directionId,q.generationId]);
 function create({fetchImpl=fetch,mono=()=>performance.now(),wall=Date.now,configUrl='./departures-config.json',clientUrl=globalThis.location?.href,timeoutMs=10000,setTimer=setTimeout,clearTimer=clearTimeout}={}){
- let configValue=null,configUntil=-Infinity,configPending=null,signature=null,epoch=0,caps=null,capUntil=0,capPending=null,globalCooldown=0;
+ let configRevision=0,configValue=null,configUntil=-Infinity,configPending=null,signature=null,epoch=0,caps=null,capUntil=0,capPending=null,globalCooldown=0;
  let discoveryBase=null,scoped=false;const decisions=new Map();
  const records=new Map(),pending=new Map(),known=new Map();
  async function json(url,init={}){const controller=new AbortController(),timer=setTimer(()=>controller.abort(),timeoutMs);try{const response=await fetchImpl(url,{...init,cache:'no-store',signal:controller.signal});return {response,body:response.ok?await response.json():null};}finally{clearTimer(timer);}}
@@ -17,15 +17,17 @@ function create({fetchImpl=fetch,mono=()=>performance.now(),wall=Date.now,config
  }
  async function config({force=false}={}){
   if(configPending)return configPending;if(!force&&mono()<configUntil)return configValue;
+  const revision=configRevision;
   configPending=(async()=>{let value=null,batch=false,observationBase=null;try{const {response,body:c}=await json(configUrl);if(response.ok && c?.schemaVersion===1 && c.realtime?.apiVersion===2 && c.realtime.enabled===false &&
       typeof clientUrl==='string' && clientUrl.startsWith('https://timetogrowup.github.io/P-123-wenare/') &&
       c.apiBase===null && c.realtime.discoveryBase==='https://wenare-passages.onrender.com') {
      observationBase=c.realtime.discoveryBase;
    }
    if(response.ok&&c?.schemaVersion===1&&c.realtime?.enabled===true&&c.realtime?.apiVersion===2&&typeof c.apiBase==='string'){const url=new URL(c.apiBase);if(url.protocol!=='https:'||url.username||url.password||url.search||url.hash||url.pathname!=='/')throw new Error('INVALID_API_BASE');{value=url.origin;batch=c.realtime.capabilityQuery===true;}}}catch{}
+   if(revision!==configRevision)return null;
    const next=JSON.stringify([value,batch,observationBase]);scoped=batch||Boolean(observationBase);discoveryBase=observationBase;if(next!==signature){epoch++;decisions.clear();caps=null;capUntil=0;signature=next;}
    configValue=value;configUntil=mono()+60000;return value;
-  })().finally(()=>{configPending=null;});return configPending;
+  })().finally(()=>{if(revision===configRevision)configPending=null;});return configPending;
  }
  async function capabilities(base){
   if(caps&&mono()<capUntil)return caps;if(capPending)return capPending;const mine=epoch;
@@ -97,7 +99,8 @@ function create({fetchImpl=fetch,mono=()=>performance.now(),wall=Date.now,config
   }catch(error){if(error.message==='NO_ACTIVE_READERS')return present(previous);const record=safe(query,previous,{retire:mine!==epoch,reason:error.message});record.refreshMono=Math.max(globalCooldown,mono()+60000);record.epoch=epoch;put(key,record);return present(record);}})().finally(()=>pending.delete(key));
   entry.promise=request;pending.set(key,entry);return join(entry,signal);
  }
- return {read,config,prepare,configDelay:()=>Math.max(0,configUntil-mono()),nextDelay:query=>Math.max(0,Math.max(globalCooldown,records.get(queryKey(query))?.refreshMono||mono())-mono()),invalidateConfig(){configUntil=-Infinity;},clear(){decisions.clear();for(const [key,record]of records)if(record.blocked)record.refreshMono=0;else records.delete(key);caps=null;capUntil=0;configUntil=-Infinity;}};
+ function cached(query){return present(safe(query,null,{retire:true}));}
+ return {read,cached,config,prepare,configDelay:()=>Math.max(0,configUntil-mono()),nextDelay:query=>Math.max(0,Math.max(globalCooldown,records.get(queryKey(query))?.refreshMono||mono())-mono()),invalidateConfig(){configRevision++;configPending=null;configUntil=-Infinity;},clear(){decisions.clear();for(const [key,record]of records)if(record.blocked)record.refreshMono=0;else records.delete(key);caps=null;capUntil=0;configUntil=-Infinity;}};
 }
 function createScheduler({loader,onRecord,isActive=()=>true,mono=()=>performance.now(),setTimer=setTimeout,clearTimer=clearTimeout}={}){
  let targets=[],revision=null,signature=null,timer=null,pending=false,epoch=0,rerun=false,controller=null;
