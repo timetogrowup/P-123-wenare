@@ -24,3 +24,11 @@ Les index factuels GTFS des lignes 6501 et RER A sont produits avec les horaires
 La configuration publique reste apiBase=null et realtime.enabled=false. Aucun backend, profil privé, secret ou relevé PRIM n'est publié ici. Le profil source et les observations réelles sont qualifiés dans le dépôt privé ; la correction R1 ne modifie pas le client public. G1 par flux, allocation réelle PRIM, recette physique Samsung S24 et pilote 48 h restent à acquérir. Les mesures mémoire au repos ne prouvent pas la capacité en charge.
 
 Retour arrière du client : référence 51 de 29b87b6, cache à renouveler, configuration désactivée et horaires valides conservés. Ne jamais réinitialiser les quotas ou les annulations pour restaurer une version.
+
+## Reprise du 24 novembre — vérification sans activation
+
+Client 52 inchangé : les 19 ressources HTTP sont de nouveau conformes ; horaires et index de la génération publiée encore valides, configuration temps réel désactivée. Le renouvellement quotidien est configuré dans le pipeline public ; sa prochaine exécution reste à observer.
+
+Les contrôles privés locaux ont réussi : 113 tests Node, 21 Python et démarrage des processus. Une simulation locale a mesuré la mutualisation et la désactivation, sans appel fournisseur ; elle ne prouve pas la capacité du serveur hébergé en charge. Le rejeu des preuves précédentes n'apporte aucune observation source nouvelle.
+
+La campagne de qualification complémentaire n'a pas été exécutée, l'ouverture temporaire du contrôle serveur ayant été refusée par le contrôle automatique d'approbation. Aucun nouveau déploiement serveur, profil qualifié ou pilote activé. Allocation fournisseur, parcours réel complet, recette physique Samsung S24 et pilote de 48 heures restent à acquérir. Le détail et les preuves demeurent dans le dépôt privé.
