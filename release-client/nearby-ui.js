@@ -12,8 +12,30 @@ const expanded=new Set();
 let lineColours=new Map();
 const realtime=window.WenareRealtimeLoader?.create();
 const realtimeScheduler=realtime&&WenareRealtimeLoader.createScheduler?WenareRealtimeLoader.createScheduler({loader:realtime,isActive:()=>enabled&&!document.hidden&&navigator.onLine!==false&&!document.querySelector('dialog[open]:not(#passage-detail)')&&!projected()&&window.WenareOpportunitiesUI?.transportNeeded()!==false,onRecord(query,record,revision){if(revision!==sequence)return;const row=results.get(WenareRealtimeLoader.serviceKey(query));if(!row?.response||row.response.generationId!==query.generationId)return;row.realtime=record;render();}}):null;
+const visibleMeter=window.WenareRealtimeLoader?.createVisibleMeter?.({send(payload){
+ if (!realtime?.acceptVisibleReport?.() || navigator.onLine===false) return;
+ fetch('https://wenare-passages.onrender.com/api/v2/visible-passages',{
+   method:'POST',body:JSON.stringify(payload),credentials:'omit',referrerPolicy:'no-referrer',keepalive:true
+ }).catch(()=>{});
+}});
+let visibleFrame=null,minuteTimer=null;
+function measureVisible(){
+ visibleFrame=null;
+ visibleMeter.advance();
+ if(!realtime?.visibleMeasurement?.() || !enabled || projected() || document.hidden ||
+    document.querySelector('dialog[open]') || window.WenareOpportunitiesUI?.transportNeeded()===false)return;
+ WenareRealtimeLoader.sampleVisibleChips(document,innerWidth,innerHeight,(key,mode,red)=>{
+   visibleMeter.see(key,mode,red);
+   if(minuteTimer===null)minuteTimer=setTimeout(()=>{minuteTimer=null;visibleMeter.advance();},60000-Date.now()%60000+10);
+ });
+}
+function scheduleMeasurement(){
+ if(visibleFrame===null && !document.hidden && realtime?.visibleMeasurement?.())visibleFrame=requestAnimationFrame(measureVisible);
+}
+window.addEventListener('pagehide',event=>{if(!event.persisted)visibleMeter?.flush();});
 let syncFrame=null;
 function scheduleRealtime(){
+ scheduleMeasurement();
  if(syncFrame!==null)return;
  syncFrame=requestAnimationFrame(()=>{syncFrame=null;syncRealtime();});
 }
@@ -50,7 +72,7 @@ function syncRealtime(){
 }
 let structureKey=null;
 function pairKey(place,item){return String(place.id)+'|'+item.event.id;}
-function pairNode(place,item,where,secondary=false){const node=WenareRealtimeUI.create(item.view,pairKey(place,item)+'|'+where,{secondary,sourceKey:pairKey(place,item)});node.dataset.serviceKey=WenareRealtimeLoader.serviceKey(item.event);return node;}
+function pairNode(place,item,mode,where,secondary=false){const node=WenareRealtimeUI.create(item.view,pairKey(place,item)+'|'+where,{secondary,sourceKey:pairKey(place,item)});node.dataset.serviceKey=WenareRealtimeLoader.serviceKey(item.event);node.dataset.meterMode=mode;const event=item.event;node.dataset.meterKey=JSON.stringify([results.get(node.dataset.serviceKey)?.response?.generationId,event.tripRef && Number.isSafeInteger(event.stopSequence)?WenareRealtimeCore.visitKey(event):event.id]);return node;}
 let physicalRequest=0,fixExpiry=null;
 function publishPhysical(status){
  const valid=logic.validPosition(lastFix?.coords,lastFix?.timestamp),position=valid?{
@@ -130,12 +152,13 @@ function projectionNotice(){
 }
 function select(){dataIssues=false;const wall=Date.now(),mono=performance.now(),all=[...new Map([...railScanned,...scanned].map(p=>[p.id,p])).values()],groups=new Map(all.map(p=>[p.id,groupsFor(p,wall,mono)])),sections=logic.selectSections(scanned,groups,railScanned);places=sections.primary;railPlaces=sections.rail;}
 function render(){
+ scheduleMeasurement();
  const active=document.activeElement,focusedTeleport=active?.dataset.nearbyTeleport,focusedTrip=active?.classList.contains('trip-calls-trigger')?{placeId:active.dataset.placeId,lineId:active.dataset.lineId,direction:active.dataset.direction}:null;
  select();controls();const signature=JSON.stringify({revision:context.revision,expanded:[...expanded],loading,dataIssues,places:[...places,...railPlaces].map(p=>[p.id,...p.groups.map(g=>[g.key,...g.events.map(i=>i.event.id)])])});if(signature===structureKey){const views=new Map([...places,...railPlaces].flatMap(p=>p.groups.flatMap(g=>g.events.map(i=>[pairKey(p,i),i.view]))));WenareRealtimeUI.refresh(views);return;}structureKey=signature;const focusedPlace=document.activeElement?.classList.contains('place-toggle')?document.activeElement.dataset.placeId:null;$('nearbyCards').replaceChildren();$('railCards').replaceChildren();$('railOverview').hidden=!railPlaces.length;if(!places.length&&center()&&enabled)$('nearbyCards').append(element('p',loading?'⏳ Recherche des départs dans les 60 minutes…':projectionNotice()||(dataIssues?'⚠ Horaires indisponibles ou expirés. Réessayez avec une connexion.':'🔎 Aucun départ dans les 60 minutes à moins de '+radius.toLocaleString('fr-FR')+' m.'),'nearby-empty'));
  for(const {i,place,target,prefix} of [...places.map((place,i)=>({place,i,target:'nearbyCards',prefix:'place'})),...railPlaces.map((place,i)=>({place,i,target:'railCards',prefix:'rail'}))]){
  const card=element('article',undefined,'departure-place');card.dataset.view='directions';
  const groups=place.groups,lineStates=new Map(place.services.map(service=>[service.lineId,{service}])),partial=dataIssues,list=element('ul',undefined,'all-departures'),shown=new Set();
- for(const group of groups){shown.add(group.lineId);const li=element('li'),name=element('div',undefined,'departure-service');li.dataset.lineId=group.lineId;const tripButton=badge(group);const action=document.createElement('button');action.type='button';action.className=tripButton.className+' trip-calls-trigger';action.style.cssText=tripButton.style.cssText;if(tripButton.dataset.officialColour)action.dataset.officialColour=tripButton.dataset.officialColour;action.textContent=tripButton.textContent;action.dataset.placeId=String(place.id);action.dataset.lineId=group.lineId;action.dataset.direction=String(group.gtfsDirectionId??'unknown');action.title='Voir tous les arrêts jusqu’au terminus';action.setAttribute('aria-label',label(group.mode)+' '+group.lineName+' vers '+group.nextName+' : voir les arrêts jusqu’au terminus');action.onclick=event=>{event.stopPropagation();window.WenareTripCallsUI?.open(group,place,action);};name.append(action,element('span',(group.gtfsDirectionId===null?'Sens non renseigné · ':'')+'→ '+group.nextName));li.append(name);const times=element('p',undefined,'departure-times');group.events.forEach((item,j)=>{const wrap=element('span');if(j)wrap.append(document.createTextNode('Puis '));wrap.append(pairNode(place,item,'detail',j>0),document.createTextNode(' → '+(item.event.destinationName||'Destination non renseignée')+(projected()?'':' · prévu '+new Date(item.event.scheduledTimeUtc).toLocaleTimeString('fr-FR',{timeZone:'Europe/Paris',hour:'2-digit',minute:'2-digit'}))));times.append(wrap);});if(group.events.length===1)times.append(element('span','Puis : aucun dans les 60 min'));li.append(times);list.append(li);}
+ for(const group of groups){shown.add(group.lineId);const li=element('li'),name=element('div',undefined,'departure-service');li.dataset.lineId=group.lineId;const tripButton=badge(group);const action=document.createElement('button');action.type='button';action.className=tripButton.className+' trip-calls-trigger';action.style.cssText=tripButton.style.cssText;if(tripButton.dataset.officialColour)action.dataset.officialColour=tripButton.dataset.officialColour;action.textContent=tripButton.textContent;action.dataset.placeId=String(place.id);action.dataset.lineId=group.lineId;action.dataset.direction=String(group.gtfsDirectionId??'unknown');action.title='Voir tous les arrêts jusqu’au terminus';action.setAttribute('aria-label',label(group.mode)+' '+group.lineName+' vers '+group.nextName+' : voir les arrêts jusqu’au terminus');action.onclick=event=>{event.stopPropagation();window.WenareTripCallsUI?.open(group,place,action);};name.append(action,element('span',(group.gtfsDirectionId===null?'Sens non renseigné · ':'')+'→ '+group.nextName));li.append(name);const times=element('p',undefined,'departure-times');group.events.forEach((item,j)=>{const wrap=element('span');if(j)wrap.append(document.createTextNode('Puis '));wrap.append(pairNode(place,item,group.mode,'detail',j>0),document.createTextNode(' → '+(item.event.destinationName||'Destination non renseignée')+(projected()?'':' · prévu '+new Date(item.event.scheduledTimeUtc).toLocaleTimeString('fr-FR',{timeZone:'Europe/Paris',hour:'2-digit',minute:'2-digit'}))));times.append(wrap);});if(group.events.length===1)times.append(element('span','Puis : aucun dans les 60 min'));li.append(times);list.append(li);}
  const lines=logic.lineRows(groups).sort((a,b)=>a.lineName.localeCompare(b.lineName,'fr',{numeric:true}));
  const summary=element('div',undefined,'place-summary'),detailId=prefix+'-detail-'+i,open=expanded.has(place.id);
  const toggle=element('button',place.name,'place-toggle');toggle.type='button';toggle.dataset.placeId=place.id;summary.dataset.placeId=place.id;toggle.setAttribute('aria-expanded',String(open));toggle.setAttribute('aria-controls',detailId);
@@ -150,7 +173,7 @@ function render(){
   const slots=known.length?['0','1'].map(id=>known.find(g=>g.gtfsDirectionId===id)||null):[unknown[0]||null,null];
   slots.forEach((direction,index)=>{if(!direction){const absent=element('span','—','sense-cell sense-empty');absent.dataset.gtfsDirectionId=String(index);absent.setAttribute('aria-label','Pas de départ annoncé dans ce sens dans les 60 minutes');row.append(absent);return;}
    const cell=element('span',undefined,'sense-cell');cell.dataset.nextPlaceId=direction.nextPlaceId;cell.dataset.gtfsDirectionId=direction.gtfsDirectionId??'unknown';const name=element('span',(direction.gtfsDirectionId===null?'Sens ? · ':'')+direction.nextName,'sense-name');name.title=direction.nextName;
-   const time=element('span',undefined,'sense-time');time.append(pairNode(place,direction.events[0],'summary'));if(direction.events[1]){const following=element('small',undefined,'sense-following');following.append(document.createTextNode(' ('),pairNode(place,direction.events[1],'summary',true),document.createTextNode(')'));following.title='Suivant vers '+direction.events[1].event.destinationName;time.append(following);}
+   const time=element('span',undefined,'sense-time');time.append(pairNode(place,direction.events[0],line.mode,'summary'));if(direction.events[1]){const following=element('small',undefined,'sense-following');following.append(document.createTextNode(' ('),pairNode(place,direction.events[1],line.mode,'summary',true),document.createTextNode(')'));following.title='Suivant vers '+direction.events[1].event.destinationName;time.append(following);}
    cell.setAttribute('aria-label',label(line.mode)+' '+line.lineName+' '+(direction.gtfsDirectionId===null?'sens non renseigné':'sens GTFS '+direction.gtfsDirectionId)+' vers '+direction.nextName+' : '+direction.events[0].view.label+(direction.events[1]?', puis '+direction.events[1].view.label+' vers '+direction.events[1].event.destinationName:''));cell.append(name,time);row.append(cell);});
 
   if(line.directions.length>2){const more=element('span','＋'+(line.directions.length-2),'sense-variants');more.title='Autres premiers arrêts dans le détail';row.append(more);}
