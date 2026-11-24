@@ -12,7 +12,7 @@ permissions:
   contents: write
   pages: write
 concurrency:
-  group: public-idfm-qualified-data
+  group: ${{ github.event_name == 'pull_request' && format('public-idfm-qualified-pr-{0}', github.event.pull_request.number) || 'public-idfm-qualified-data' }}
   cancel-in-progress: true
 jobs:
   qualify-data:
@@ -59,7 +59,21 @@ jobs:
           python scripts/validate_trip_calls.py
           python scripts/prepare_trip_calls_client.py
           python scripts/prepare_realtime_publication.py --archive .cache/gtfs-${{ steps.day.outputs.value }}.zip --distribution distribution
+          python scripts/prepare_realtime_publication.py --archive .cache/gtfs-${{ steps.day.outputs.value }}.zip --distribution distribution --regional
           python monitoring/validate_transport_reserve.py
+      - name: Qualifier le paquet régional sur les horaires générés
+        if: github.event_name == 'pull_request'
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          root = Path('distribution/realtime-identities-regional')
+          status = json.loads((root / 'status.json').read_bytes())
+          assert status['indexReady'] and status['activation'] is False, status['warnings']
+          manifest = json.loads((root / status['generationId'] / 'manifest.json').read_bytes())
+          assert manifest['packets']['IDFM-C01743.json.gz']['visits'] > 0
+          print(status['generationId'], manifest['scope'])
+          PY
       - name: Tests de non-régression
         run: |
           python -m unittest discover -s tests -v

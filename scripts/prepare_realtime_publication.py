@@ -13,7 +13,8 @@ from build_realtime_identities import build, publish_candidate, encoded
 
 UTC = dt.timezone.utc
 LINES = ['IDFM:C02565', 'IDFM:C01742']
-ERRORS = {'GTFS_SOURCE_HASH_MISMATCH', 'TIMETABLE_HASH_MISMATCH', 'TIMETABLE_GENERATION_MISMATCH', 'AMBIGUOUS_PUBLISHER_ALIAS', 'TRIP_IDENTITY_COLLISION', 'CANONICAL_VISIT_CONFLICT', 'IDENTITY_SIZE_LIMIT', 'IDENTITY_ROW_LIMIT', 'GENERATION_ALREADY_EXISTS'}
+RER_B_SERVICE = ('IDFM:C01743', 'IDFM:monomodalStopPlace:462394', 'IDFM:monomodalStopPlace:473364')
+ERRORS = {'NO_VISITS_FOR_SCOPED_SERVICE', 'IDENTITY_RUNTIME_SIZE_LIMIT', 'GTFS_SOURCE_HASH_MISMATCH', 'TIMETABLE_HASH_MISMATCH', 'TIMETABLE_GENERATION_MISMATCH', 'AMBIGUOUS_PUBLISHER_ALIAS', 'TRIP_IDENTITY_COLLISION', 'CANONICAL_VISIT_CONFLICT', 'IDENTITY_SIZE_LIMIT', 'IDENTITY_ROW_LIMIT', 'GENERATION_ALREADY_EXISTS'}
 
 
 def live_generations(root, now):
@@ -39,18 +40,22 @@ def live_generations(root, now):
     return result
 
 
-def prepare(archive, distribution, *, now=None, builder=build, lines=None):
+def prepare(archive, distribution, *, now=None, builder=build, lines=None, regional=False):
     now = now or dt.datetime.now(UTC)
     raw = (distribution / 'mobility/manifest.json').read_bytes()
     theory = json.loads(raw)
     generation = theory.get('generationId')
     if theory.get('schemaVersion') != 2 or not re.fullmatch(r'[A-Za-z0-9_-]{1,100}', generation or '') or not re.fullmatch(r'[a-f0-9]{64}', theory.get('sourceSha256', '')) or dt.datetime.fromisoformat(theory['validUntilUtc'].replace('Z', '+00:00')) <= now:
         raise ValueError('VALID_THEORETICAL_MANIFEST_REQUIRED')
-    root = distribution / 'realtime-identities'
+    scope = lines or (LINES + [RER_B_SERVICE[0]] if regional else LINES)
+    root = distribution / ('realtime-identities-regional' if regional else 'realtime-identities')
     root.mkdir(parents=True, exist_ok=True)
     ready, warnings = False, []
     try:
-        index, packets = builder(archive, distribution / 'mobility', lines or LINES)
+        options = {'trip_scope': RER_B_SERVICE} if regional else {}
+        index, packets = builder(archive, distribution / 'mobility', scope, **options)
+        if regional and sum(meta['decodedBytes'] for meta in index['packets'].values()) > 12 * 1024 ** 2:
+            raise ValueError('IDENTITY_RUNTIME_SIZE_LIMIT')
         if index['generationId'] != generation:
             raise ValueError('TIMETABLE_GENERATION_MISMATCH')
         publish_candidate(index, packets, root)
@@ -61,7 +66,7 @@ def prepare(archive, distribution, *, now=None, builder=build, lines=None):
     candidates = sorted(live_generations(root, now), key=lambda g: (g['id'] == generation and ready, g['from'], g['until'], g['id']), reverse=True)
     for old in candidates[2:]:
         shutil.rmtree(old['folder'])
-    status = {'schemaVersion': 1, 'algorithmVersion': 1, 'generationId': generation, 'sourceSha256': theory['sourceSha256'], 'checkedAtUtc': now.isoformat(), 'indexReady': ready, 'activation': False, 'scope': lines or LINES, 'warnings': warnings, 'generations': [{'generationId': g['id'], 'validFromUtc': g['from'].isoformat(), 'validUntilUtc': g['until'].isoformat(), 'manifest': g['id'] + '/manifest.json', 'sha256': g['sha256']} for g in candidates[:2]], 'limitations': ['GTFS identity scope is not verified realtime coverage.', 'Only the private server can qualify and enable a service.']}
+    status = {'schemaVersion': 1, 'algorithmVersion': 1, 'generationId': generation, 'sourceSha256': theory['sourceSha256'], 'checkedAtUtc': now.isoformat(), 'indexReady': ready, 'activation': False, 'scope': scope, 'warnings': warnings, 'generations': [{'generationId': g['id'], 'validFromUtc': g['from'].isoformat(), 'validUntilUtc': g['until'].isoformat(), 'manifest': g['id'] + '/manifest.json', 'sha256': g['sha256']} for g in candidates[:2]], 'limitations': ['GTFS identity scope is not verified realtime coverage.', 'Only the private server can qualify and enable a service.']}
     temporary = root / '.status.tmp'
     temporary.write_bytes(encoded(status))
     temporary.replace(root / 'status.json')
@@ -72,6 +77,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--archive', required=True, type=pathlib.Path)
     parser.add_argument('--distribution', type=pathlib.Path, default=pathlib.Path('distribution'))
+    parser.add_argument('--regional', action='store_true', help='Prepare the separate candidate index including the reviewed RER B service')
     args = parser.parse_args()
-    result = prepare(args.archive, args.distribution)
+    result = prepare(args.archive, args.distribution, regional=args.regional)
     print(json.dumps({k: result[k] for k in ['generationId', 'indexReady', 'activation', 'warnings']}))

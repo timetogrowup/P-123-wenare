@@ -60,7 +60,9 @@ def read_package(distribution, manifest, line):
     return data
 
 
-def build(archive_path, distribution, lines):
+def build(archive_path, distribution, lines, *, trip_scope=None):
+    if trip_scope and trip_scope[0] not in lines:
+        raise ValueError('INVALID_IDENTITY_SCOPE')
     manifest_raw = (distribution / 'manifest.json').read_bytes()
     manifest = json.loads(manifest_raw)
     generation = manifest.get('generationId', '')
@@ -149,6 +151,15 @@ def build(archive_path, distribution, lines):
                 bindings.append([stamp, date, ref, sequence, stop, destination])
         if len(bindings) > MAX_VISITS:
             raise ValueError('IDENTITY_ROW_LIMIT')
+        if trip_scope and line == trip_scope[0]:
+            _, scoped_stop, scoped_destination = trip_scope
+            selected = {row[2] for row in bindings
+                        if row[4] == scoped_stop and row[5] == scoped_destination}
+            if not selected:
+                raise ValueError('NO_VISITS_FOR_SCOPED_SERVICE')
+            # Keep every visit of a selected trip, including repeated calls.
+            bindings = [row for row in bindings if row[2] in selected]
+            identities = {ref: trip for ref, trip in identities.items() if ref in selected}
         # Preserve official point/parent relations without inventing provider aliases.
         pending = list(used_stops)
         selected_stops = {}
