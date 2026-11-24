@@ -52,3 +52,5 @@ Les 19 ressources publiées correspondent aux empreintes de la version. Fenêtre
 ## 24 novembre — affichage mobile, livraison 54
 
 Le badge de ligne et les délais ont la même hauteur de 24 px. Les deux passages d’une direction restent côte à côte. Si la largeur intérieure est de 335 px ou moins, chaque direction dispose d’une rangée. Le contrôle de géométrie du client est passé sur Chromium et WebKit aux largeurs 320, 360, 390, 412 et 768 px ([exécution](https://github.com/timetogrowup/P-123-wenare/actions/runs/45397655383)). Les fichiers de mise en page de la livraison 54 sont servis sur GitHub Pages. Une nouvelle observation sur le téléphone de Patrick reste attendue.
+
+Le 24 novembre, la disposition corrigée des badges et des délais a été validée sur Samsung S24. La vérification physique de la fenêtre et du passage du rouge au noir à l’expiration reste ouverte. Le contrôle de la nouvelle génération est programmé le 25 novembre à 10 h, heure de Paris.
