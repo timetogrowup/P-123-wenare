@@ -55,3 +55,37 @@ test('regional discovery accepts a compatible legacy server and fails closed on 
   await loader.read(query);assert.equal(trips,fallback?1:0);
  }
 });
+
+test('scoped discovery keeps the remaining reader and skips departures after all readers leave', async () => {
+  for (const keepSecond of [true,false]) {
+    let signalStarted, release;
+    const started = new Promise(resolve => {signalStarted=resolve;});
+    const gate = new Promise(resolve => {release=resolve;});
+    let discoveries=0, departures=0;
+    const loader=create({fetchImpl:async url=>{
+      if(url.endsWith('departures-config.json')) return Response.json({schemaVersion:1,apiBase:'https://fixture.example',realtime:{enabled:true,apiVersion:2,capabilityQuery:true}});
+      if(url.endsWith('/capabilities/query')){
+        discoveries++;
+        signalStarted();
+        await gate;
+        return Response.json({schemaVersion:2,generationId,registryVersion:'fixture',services:[{...query,coverage:'covered'}]});
+      }
+      assert.ok(url.includes('/api/v2/departures?'));
+      departures++;
+      return Response.json(body());
+    }});
+    const first=new AbortController(), second=new AbortController();
+    const one=loader.read(query,{signal:first.signal});
+    await started;
+    const two=loader.read(query,{signal:second.signal});
+    await new Promise(resolve=>setImmediate(resolve));
+    first.abort();
+    await assert.rejects(one,/ABORTED/);
+    if(!keepSecond){second.abort();await assert.rejects(two,/ABORTED/);}
+    release();
+    if(keepSecond) assert.equal((await two)?.body?.departures.length,1);
+    await new Promise(resolve=>setImmediate(resolve));
+    assert.equal(discoveries,1);
+    assert.equal(departures,keepSecond?1:0);
+  }
+});

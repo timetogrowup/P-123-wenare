@@ -74,7 +74,7 @@ function create({fetchImpl=fetch,mono=()=>performance.now(),wall=Date.now,config
   if(pending.has(key))return join(pending.get(key),signal);
   const mine=epoch,entry={readers:0},request=(async()=>{try{
    let eligible;
-   if(scoped){await prepare([query],signal);eligible=decisions.get(key)?.allowed===true;}
+   if(scoped){await prepare([query]);eligible=decisions.get(key)?.allowed===true;}
    else{const cap=await capabilities(base);eligible=cap.generations.includes(query.generationId)&&cap.services.some(s=>serviceKey(s)===serviceKey(query)&&['covered','partial'].includes(s.coverage));}
    if(!entry.readers)throw new Error('NO_ACTIVE_READERS');
    if(!eligible){const r=safe(query,null,{retire:true,reason:'NOT_QUALIFIED'});r.refreshMono=mono()+60000;r.epoch=mine;put(key,r);return present(r);}
