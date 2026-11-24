@@ -42,3 +42,9 @@ Le client 52 et ses 19 ressources ont été vérifiés sur le site publié. Les 
 Une consultation opérateur limitée au bus 6501 de Reine Blanche vers Maison des Insectes a confirmé un passage en direct, rattaché à la visite correspondante de l’horaire publié. Le sens Saint-Germain-en-Laye et le service RER A vers Chessy sont restés fermés. La fenêtre est terminée. Le site public affiche toujours le client 52 en mode théorique.
 
 Le renouvellement réel des horaires et de leur index sera vérifié sur la prochaine génération. L’essai physique sur Samsung S24 et le suivi de 48 h restent à effectuer. Le suivi de 48 h commencera après activation publique effective. Les détails du fournisseur et les preuves de recette sont conservés dans le projet privé.
+
+## 24 novembre 2026 — client 53 publié
+
+Chaque passage présente un chiffre dans un bloc vert. Le noir correspond à l’horaire officiel. Le rouge correspond à une estimation exploitable. Toucher le bloc ouvre les horaires précédent, sélectionné et suivant, et explique l’origine de la valeur. En projection, la consultation reste théorique.
+
+Les 19 ressources publiées correspondent aux empreintes de la version. Fenêtre ouverte depuis l’application publique à Hôtel de Ville, ligne 1 vers Château de Vincennes. Les contrôles du client et les scénarios de navigateur Chromium et WebKit ont réussi ([exécution GitHub](https://github.com/timetogrowup/P-123-wenare/actions/runs/45388964130)). Le service public est en mode théorique. L’essai physique S24 du nouveau client et la vérification d’une nouvelle course après renouvellement précèdent l’ouverture du pilote 6501. Le suivi de 48 h débutera à l’activation effective.
