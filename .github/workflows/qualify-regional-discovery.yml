@@ -1,0 +1,21 @@
+name: Vérifier la découverte régionale sur Pages
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - monitoring/qualify_regional_discovery.cjs
+      - .github/workflows/qualify-regional-discovery.yml
+permissions:
+  contents: read
+jobs:
+  discovery:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: npm install --no-save --ignore-scripts playwright@1.62.1
+      - run: npx playwright install --with-deps chromium
+      - run: node monitoring/qualify_regional_discovery.cjs
