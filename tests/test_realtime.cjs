@@ -25,3 +25,33 @@ test('RT07 timetable resolves an identified past visit before its future filter'
 
 test('RT26 explicit fresh at-stop remains visible in nearby selection after ETA',()=>{const nearby=require('../nearby.js'),v=rt.pair(theory(),{...live(),status:'at_stop',expectedTimeUtc:iso(now-1000)},options);assert.equal(nearby.imminent(v,now),true);assert.equal(v.animation,'none');});
 test('RT11/19 expired or unusable at-stop restores theoretical imminence',()=>{for(const extra of [{validUntilUtc:iso(now)},{quality:'stale'},{sourceRecordedAtUtc:null},{binding:{...live().binding,generationId:'other'}}]){const p=rt.pair(theory(2),{...live(),status:'at_stop',...extra},options);assert.equal(p.real,false);assert.equal(p.rectangleState,'empty');assert.equal(p.realtimeLabel,'');assert.equal(p.active,true);assert.equal(p.animation,'none');}});
+
+test('regional discovery batches visible services and reuses decisions within the minute',async()=>{
+ const batches=[],departures=[];
+ const loader=create({wall:()=>now,mono:()=>0,fetchImpl:async(url,init)=>{
+  if(url.includes('config.json'))return Response.json({schemaVersion:1,apiBase:'https://api.example',realtime:{enabled:true,apiVersion:2,capabilityQuery:true}});
+  if(url.endsWith('/capabilities/query')){
+   const request=JSON.parse(init.body);batches.push(request);
+   return Response.json({schemaVersion:2,registryVersion:'fixture',generationId,services:request.services.map(s=>({...s,coverage:s.stopId===query.stopId?'covered':'unknown'}))});
+  }
+  departures.push(url);return Response.json(body());
+ }});
+ const queries=[query,...Array.from({length:35},(_,i)=>({...query,stopId:'other-'+i}))];
+ await loader.config();await loader.prepare([...queries,query]);
+ assert.deepEqual(batches.map(b=>b.services.length),[32,4]);
+ await loader.read(query);await loader.read(queries[1]);await loader.prepare(queries);
+ assert.equal(batches.length,2);assert.equal(departures.length,1);
+ assert.ok(departures[0].includes('/departures?'));
+});
+
+test('regional discovery accepts a compatible legacy server and fails closed on a malformed response',async()=>{
+ for(const fallback of [true,false]){
+  let trips=0;const loader=create({wall:()=>now,mono:()=>0,fetchImpl:async url=>{
+   if(url.includes('config.json'))return Response.json({schemaVersion:1,apiBase:'https://api.example',realtime:{enabled:true,apiVersion:2,capabilityQuery:true}});
+   if(url.endsWith('/query'))return fallback?new Response('',{status:404}):Response.json({schemaVersion:2,generationId:'other',services:[]});
+   if(url.endsWith('/capabilities'))return Response.json({schemaVersion:2,generations:[generationId],services:[{...query,coverage:'covered'}]});
+   trips++;return Response.json(body());
+  }});
+  await loader.read(query);assert.equal(trips,fallback?1:0);
+ }
+});

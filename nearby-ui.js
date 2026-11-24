@@ -12,10 +12,32 @@ const expanded=new Set();
 let lineColours=new Map();
 const realtime=window.WenareRealtimeLoader?.create();
 const realtimeScheduler=realtime&&WenareRealtimeLoader.createScheduler?WenareRealtimeLoader.createScheduler({loader:realtime,isActive:()=>enabled&&!document.hidden&&!projected()&&window.WenareOpportunitiesUI?.transportNeeded()!==false,onRecord(query,record,revision){if(revision!==sequence)return;const row=results.get(WenareRealtimeLoader.serviceKey(query));if(!row?.response||row.response.generationId!==query.generationId)return;row.realtime=record;render();}}):null;
-function syncRealtime(){if(!realtimeScheduler)return;if(document.hidden||projected()||!enabled||window.WenareOpportunitiesUI?.transportNeeded()===false){realtimeScheduler.stop();return;}const services=[...new Map([...scanned,...railScanned].filter(p=>p.distance<=radius).flatMap(p=>p.services).map(s=>[s.key,s])).values()];const queries=services.flatMap(q=>{const row=results.get(q.key);return row?.response?.generationId?[{stopId:q.stopId,lineId:q.lineId,directionId:q.directionId,generationId:row.response.generationId}]:[];});realtimeScheduler.update(queries,{revision:sequence});}
+let syncFrame=null;
+function scheduleRealtime(){
+ if(syncFrame!==null)return;
+ syncFrame=requestAnimationFrame(()=>{syncFrame=null;syncRealtime();});
+}
+window.addEventListener('scroll',scheduleRealtime,{passive:true,capture:true});
+window.addEventListener('resize',scheduleRealtime,{passive:true});
+function syncRealtime(){
+ if(!realtimeScheduler)return;
+ if(document.hidden||projected()||!enabled||window.WenareOpportunitiesUI?.transportNeeded()===false){
+  realtimeScheduler.stop();return;
+ }
+ const visible=new Map();
+ for(const node of document.querySelectorAll('#nearbyCards [data-service-key],#railCards [data-service-key]')){
+  const rect=node.getBoundingClientRect();
+  if(!rect.width||!rect.height||rect.bottom<=0||rect.top>=innerHeight||rect.right<=0||rect.left>=innerWidth)continue;
+  const key=node.dataset.serviceKey,row=results.get(key);
+  if(!row?.response?.generationId||visible.has(key))continue;
+  const [stopId,lineId,directionId]=JSON.parse(key);
+  visible.set(key,{stopId,lineId,directionId,generationId:row.response.generationId});
+ }
+ realtimeScheduler.update([...visible.values()],{revision:sequence});
+}
 let structureKey=null;
 function pairKey(place,item){return String(place.id)+'|'+item.event.id;}
-function pairNode(place,item,where,secondary=false){return WenareRealtimeUI.create(item.view,pairKey(place,item)+'|'+where,{secondary,sourceKey:pairKey(place,item)});}
+function pairNode(place,item,where,secondary=false){const node=WenareRealtimeUI.create(item.view,pairKey(place,item)+'|'+where,{secondary,sourceKey:pairKey(place,item)});node.dataset.serviceKey=WenareRealtimeLoader.serviceKey(item.event);return node;}
 let physicalRequest=0,fixExpiry=null;
 function publishPhysical(status){
  const valid=logic.validPosition(lastFix?.coords,lastFix?.timestamp),position=valid?{
@@ -128,6 +150,7 @@ function render(){
  summary.onclick=()=>{if(expanded.has(place.id))expanded.delete(place.id);else expanded.add(place.id);render();};
  card.append(summary,detail);$(target).append(card);
  }
+ scheduleRealtime();
  WenareRealtimeUI.syncDialog();
  window.dispatchEvent(new CustomEvent('wenare:map-data',{detail:{source:'transport',revision:context.revision,items:enabled?[...places,...railPlaces].map(p=>({...p,id:String(p.id),category:'transport',mapSummary:p.groups.map(g=>label(g.mode)+' '+g.lineName+' → '+g.nextName+' : '+g.events.map(x=>x.view.label).join(', puis ')).join(' · ')})):[]}}));
  for(const id of ['nearbyCards','railCards'])window.WenareMotion?.cards($(id));
