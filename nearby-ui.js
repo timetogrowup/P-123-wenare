@@ -11,7 +11,7 @@ let candidates=[],radius=250,manualRadius=false;
 const expanded=new Set();
 let lineColours=new Map();
 const realtime=window.WenareRealtimeLoader?.create();
-const realtimeScheduler=realtime&&WenareRealtimeLoader.createScheduler?WenareRealtimeLoader.createScheduler({loader:realtime,isActive:()=>enabled&&!document.hidden&&!projected()&&window.WenareOpportunitiesUI?.transportNeeded()!==false,onRecord(query,record,revision){if(revision!==sequence)return;const row=results.get(WenareRealtimeLoader.serviceKey(query));if(!row?.response||row.response.generationId!==query.generationId)return;row.realtime=record;render();}}):null;
+const realtimeScheduler=realtime&&WenareRealtimeLoader.createScheduler?WenareRealtimeLoader.createScheduler({loader:realtime,isActive:()=>enabled&&!document.hidden&&navigator.onLine!==false&&!document.querySelector('dialog[open]:not(#passage-detail)')&&!projected()&&window.WenareOpportunitiesUI?.transportNeeded()!==false,onRecord(query,record,revision){if(revision!==sequence)return;const row=results.get(WenareRealtimeLoader.serviceKey(query));if(!row?.response||row.response.generationId!==query.generationId)return;row.realtime=record;render();}}):null;
 let syncFrame=null;
 function scheduleRealtime(){
  if(syncFrame!==null)return;
@@ -19,12 +19,25 @@ function scheduleRealtime(){
 }
 window.addEventListener('scroll',scheduleRealtime,{passive:true,capture:true});
 window.addEventListener('resize',scheduleRealtime,{passive:true});
+window.addEventListener('offline',()=>realtimeScheduler?.stop());
+new MutationObserver(changes=>{
+ if(changes.some(change=>change.target.tagName==='DIALOG'))scheduleRealtime();
+}).observe(document.body,{subtree:true,attributes:true,attributeFilter:['open']});
 function syncRealtime(){
  if(!realtimeScheduler)return;
- if(document.hidden||projected()||!enabled||window.WenareOpportunitiesUI?.transportNeeded()===false){
+ if(document.hidden||navigator.onLine===false||document.querySelector('dialog[open]:not(#passage-detail)')||projected()||!enabled||window.WenareOpportunitiesUI?.transportNeeded()===false){
   realtimeScheduler.stop();return;
  }
  const visible=new Map();
+ const detail=document.querySelector('#passage-detail[open]');
+ if(detail){
+  const key=detail.dataset.serviceKey;
+  const generationId=results.get(key)?.response?.generationId;
+  if(!generationId){realtimeScheduler.stop();return;}
+  const [stopId,lineId,directionId]=JSON.parse(key);
+  realtimeScheduler.update([{stopId,lineId,directionId,generationId}],{revision:sequence});
+  return;
+ }
  for(const node of document.querySelectorAll('#nearbyCards [data-service-key],#railCards [data-service-key]')){
   const rect=node.getBoundingClientRect();
   if(!rect.width||!rect.height||rect.bottom<=0||rect.top>=innerHeight||rect.right<=0||rect.left>=innerWidth)continue;

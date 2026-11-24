@@ -25,5 +25,12 @@ const {chromium,webkit}=require('playwright'),assert=require('node:assert/strict
  await page.evaluate(()=>{const spacer=document.createElement('div');spacer.id='viewport-spacer';spacer.style.height='200vh';document.body.prepend(spacer);window.scrollTo(0,0);window.dispatchEvent(new Event('scroll'));});
  await page.clock.runFor(45000);assert.equal(api,4,'No refresh while all chips are outside the viewport');
  await pair.scrollIntoViewIfNeeded();await page.clock.runFor(1000);assert.equal(api,5);
+ await page.evaluate(()=>{const d=document.createElement('dialog');d.id='covered-test';document.body.append(d);d.showModal();});
+ await page.clock.runFor(65000);
+ assert.equal(api,5,'No supplier refresh behind a modal');
+ await page.evaluate(()=>document.getElementById('covered-test').close());
+ await page.clock.runFor(2000);
+ await page.waitForFunction(()=>document.querySelector('.place-summary .passage-chip[data-live=true]'));
+ assert.equal(api,6,'Visible service resumes after modal closes');
  reports.push({browser:name,apiRequests:api,cadenceRefresh:true,stableDom:true,noAdditionalGps:true,projectionNoRealtime:true,configRevalidated:true,hiddenNoRealtime:true});await context.close();
  }finally{await browser.close();}}fs.mkdirSync('preuves/temps-reel',{recursive:true});fs.writeFileSync('preuves/temps-reel/polling-browser-results.json',JSON.stringify(reports,null,2));console.log(JSON.stringify(reports));})().catch(e=>{console.error(e);process.exit(1)});

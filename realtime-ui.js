@@ -53,7 +53,7 @@ function create(view,key,{secondary=false,sourceKey=key}={}){
  if(!node){
   node=element('button');node.type='button';node.className='departure-pair passage-chip';node.dataset.visitKey=key;
   node.setAttribute('aria-haspopup','dialog');
-  node.onclick=e=>{e.stopPropagation();ensureDialog();trigger=node;if(draw())dialog.showModal();};
+  node.onclick=e=>{e.stopPropagation();ensureDialog();trigger=node;dialog.dataset.serviceKey=node.dataset.serviceKey||'';if(draw())dialog.showModal();};
   nodes.set(key,node);
   if(nodes.size>1000)for(const [k,n] of nodes)if(n!==node&&!n.isConnected)nodes.delete(k);
  }
