@@ -1,7 +1,7 @@
 (function(root,factory){const api=factory(typeof module==='object'&&module.exports?require('./realtime-core.js'):root.WenareRealtimeCore);if(typeof module==='object'&&module.exports)module.exports=api;else root.WenareRealtimeLoader=api;})(globalThis,function(core){'use strict';
 const serviceKey=q=>JSON.stringify([q.stopId,q.lineId,q.directionId]);
 const queryKey=q=>JSON.stringify([q.stopId,q.lineId,q.directionId,q.generationId]);
-function create({fetchImpl=fetch,mono=()=>performance.now(),wall=Date.now,configUrl='./departures-config.json',timeoutMs=10000,setTimer=setTimeout,clearTimer=clearTimeout}={}){
+function create({fetchImpl=fetch,mono=()=>performance.now(),wall=Date.now,configUrl='./departures-config.json',clientUrl=globalThis.location?.href,timeoutMs=10000,setTimer=setTimeout,clearTimer=clearTimeout}={}){
  let configValue=null,configUntil=-Infinity,configPending=null,signature=null,epoch=0,caps=null,capUntil=0,capPending=null,globalCooldown=0;
  let discoveryBase=null,scoped=false;const decisions=new Map();
  const records=new Map(),pending=new Map(),known=new Map();
@@ -18,6 +18,7 @@ function create({fetchImpl=fetch,mono=()=>performance.now(),wall=Date.now,config
  async function config({force=false}={}){
   if(configPending)return configPending;if(!force&&mono()<configUntil)return configValue;
   configPending=(async()=>{let value=null,batch=false,observationBase=null;try{const {response,body:c}=await json(configUrl);if(response.ok && c?.schemaVersion===1 && c.realtime?.apiVersion===2 && c.realtime.enabled===false &&
+      typeof clientUrl==='string' && clientUrl.startsWith('https://timetogrowup.github.io/P-123-wenare/') &&
       c.apiBase===null && c.realtime.discoveryBase==='https://wenare-passages.onrender.com') {
      observationBase=c.realtime.discoveryBase;
    }
