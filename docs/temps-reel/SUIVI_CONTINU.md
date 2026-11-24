@@ -93,3 +93,7 @@ Sur le bus 6502 à Poissy vers Les Ouches, quatre visites officiellement identif
 ### 24 novembre, essai de capacité à 16 h 24 (Paris)
 
 Sur l’instance de production de 512 Mio, un processus de recette a traité des réponses synthétiques comportant 16 visites exactes. Parmi 32 demandes simultanées du même service, une demande amont simulée a suffi. Les 32 lectures suivantes ont utilisé le cache. Sur huit services distincts sollicités à la fois, quatre ont été servis et quatre ont reçu une réponse de limitation 429. Latence au 95e centile dans le traitement : 97,17 ms à froid, 25,63 ms en cache, 71,66 ms pour les huit services. Aucun appel fournisseur. Il s’agit d’un essai de capacité sur la machine existante ; la latence réseau des voyageurs et le taux de passages rouges en exploitation seront mesurés séparément.
+
+### 24 novembre vers 16 h 45, heure de Paris — client régional 55
+
+Le site public sert le cache v55 et la configuration de découverte à la demande. Les estimations voyageurs restent fermées. À Hôtel de Ville sur le métro 1 vers Château de Vincennes, le détail consulté indiquait 16 h 45, 16 h 47 et 16 h 50 pour les passages précédent, sélectionné et suivant. Le passage sélectionné affichait 2′ en noir avec son horaire officiel et la raison du repli. Ce contrôle opérateur est exclu des mesures voyageurs. L’inventaire comprend 2 124 lignes et 92 766 dessertes. La part des passages affichés en rouge en exploitation reste à mesurer après ouverture.
