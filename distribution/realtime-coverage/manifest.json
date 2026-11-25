@@ -1,17 +1,17 @@
 {
-  "generation": "20261124T172845342882Z-b49e8447ed10",
-  "sourceSha256": "b49e8447ed109217e1ce5d986c19dc27f760b2213db21c374e6530ba6f5a5629",
-  "metroNetworkSha256": "a7955f7995f9baccbe4cdea76c5dae58ad94ce53274c1666f9ceaa24bd4602d8",
-  "regionalIndexSha256": "d4ac9388cbc06c0b5deca0b60140c07f60e2f3c686a0d98d562d1d35a3cd3fb8",
-  "validFromUtc": "2026-11-23T23:00:00+00:00",
-  "validUntilUtc": "2026-11-27T23:00:00+00:00",
+  "generation": "20261125T054656362975Z-9d3df2bf82fd",
+  "sourceSha256": "9d3df2bf82fdbbe61d60a4d25fdf0e536b15cccc5e8a174abf3f8a43e012f0a6",
+  "metroNetworkSha256": "65512fede90bf7d7bfd3b13a81be3bae2a851d7caf7507694541638d0c8e7150",
+  "regionalIndexSha256": "2fec69114b1be0ec4ad5e17f00f1d990131b6cb765c4087d22011f0df691c5fe",
+  "validFromUtc": "2026-11-24T23:00:00+00:00",
+  "validUntilUtc": "2026-11-28T23:00:00+00:00",
   "lines": 2124,
-  "services": 92766,
+  "services": 94172,
   "modes": {
     "bus": {
       "lines": 2064,
-      "linesWithServices": 1869,
-      "services": 88151
+      "linesWithServices": 1872,
+      "services": 89413
     },
     "shuttle": {
       "lines": 2,
@@ -31,17 +31,17 @@
     "tram": {
       "lines": 15,
       "linesWithServices": 15,
-      "services": 1086
+      "services": 1130
     },
     "rer": {
       "lines": 5,
       "linesWithServices": 5,
-      "services": 1594
+      "services": 1669
     },
     "train": {
       "lines": 9,
       "linesWithServices": 9,
-      "services": 755
+      "services": 780
     },
     "ter": {
       "lines": 11,
@@ -55,7 +55,7 @@
     }
   },
   "file": "lignes.csv.gz",
-  "sha256": "29e25e55dfa867efd770ac29140929015bf3fb7c77806e1d9dc88cf23ce178ff",
+  "sha256": "badb566c3a20b65b6a171e98424206dbd654d97218bccab553a0a89e9f61e330",
   "historicalEvidence": "docs/temps-reel/registre-lignes-20261124T133205920626Z.csv.gz",
   "scope": "Inventaire des horaires et preuves historiques publiées. L’ouverture et les observations voyageurs figurent au suivi continu."
 }
