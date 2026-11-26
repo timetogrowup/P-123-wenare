@@ -1,8 +1,8 @@
 {
-  "generation": "20261126T004434258929Z-17a4c81ab776",
+  "generation": "20261126T152609428231Z-17a4c81ab776",
   "sourceSha256": "17a4c81ab776d916587042fe228a2f20f4f193593f34518e8f1a90dc2f1d0a37",
   "metroNetworkSha256": "659de72bc8e45e2c873d76392da4f131f8c6f095866df16295c5ed00ef23eb24",
-  "regionalIndexSha256": "02fd22bc9892b3991bb69c5c7642f95b5eba3dd84a8bed0993085b0ad14fd61f",
+  "regionalIndexSha256": "8d1489b99da3d635e76345800b28c8b1a8a2be7cb0a7b7e6626aac740d371512",
   "validFromUtc": "2026-11-25T23:00:00+00:00",
   "validUntilUtc": "2026-11-29T23:00:00+00:00",
   "lines": 2124,
@@ -55,7 +55,7 @@
     }
   },
   "file": "lignes.csv.gz",
-  "sha256": "ee63ec23aada16db0cf21324f79b03127a3e9e614725b603ad0e4faaa7d42098",
+  "sha256": "d54fcce9095823868dfe1806155f17912768fb84fa3f77195eb5a481c7a6cd48",
   "historicalEvidence": "docs/temps-reel/registre-lignes-20261124T133205920626Z.csv.gz",
   "scope": "Inventaire des horaires et preuves historiques publiées. L’ouverture et les observations voyageurs figurent au suivi continu."
 }
