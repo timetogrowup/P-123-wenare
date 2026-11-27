@@ -1,17 +1,17 @@
 {
-  "generation": "20261126T152609428231Z-17a4c81ab776",
-  "sourceSha256": "17a4c81ab776d916587042fe228a2f20f4f193593f34518e8f1a90dc2f1d0a37",
-  "metroNetworkSha256": "659de72bc8e45e2c873d76392da4f131f8c6f095866df16295c5ed00ef23eb24",
-  "regionalIndexSha256": "8d1489b99da3d635e76345800b28c8b1a8a2be7cb0a7b7e6626aac740d371512",
-  "validFromUtc": "2026-11-25T23:00:00+00:00",
-  "validUntilUtc": "2026-11-29T23:00:00+00:00",
+  "generation": "20261127T151621915430Z-cb0b38baa3b4",
+  "sourceSha256": "cb0b38baa3b41fe6330e55c1c17333b787c40a62847724676416df9b8ccff40c",
+  "metroNetworkSha256": "126123e552bebed1c2a8daec067e7b4685e2d6517af3aae29b409b2efe2e815f",
+  "regionalIndexSha256": "cd1df09df66fb1010486b0d5abfd886ab12a2a522a4adfef69e505ea6fc35e93",
+  "validFromUtc": "2026-11-26T23:00:00+00:00",
+  "validUntilUtc": "2026-11-30T23:00:00+00:00",
   "lines": 2124,
-  "services": 93507,
+  "services": 93519,
   "modes": {
     "bus": {
       "lines": 2064,
-      "linesWithServices": 1877,
-      "services": 88725
+      "linesWithServices": 1876,
+      "services": 88700
     },
     "shuttle": {
       "lines": 2,
@@ -21,7 +21,7 @@
     "metro": {
       "lines": 16,
       "linesWithServices": 16,
-      "services": 940
+      "services": 922
     },
     "funicular": {
       "lines": 1,
@@ -36,17 +36,17 @@
     "rer": {
       "lines": 5,
       "linesWithServices": 5,
-      "services": 1677
+      "services": 1707
     },
     "train": {
       "lines": 9,
       "linesWithServices": 9,
-      "services": 789
+      "services": 797
     },
     "ter": {
       "lines": 11,
       "linesWithServices": 10,
-      "services": 224
+      "services": 241
     },
     "cable": {
       "lines": 1,
@@ -55,7 +55,7 @@
     }
   },
   "file": "lignes.csv.gz",
-  "sha256": "d54fcce9095823868dfe1806155f17912768fb84fa3f77195eb5a481c7a6cd48",
+  "sha256": "edcc84f84b8d968ebd5a601ecda271d54ad3c223404e9a1fb382d1cf7bc5910b",
   "historicalEvidence": "docs/temps-reel/registre-lignes-20261124T133205920626Z.csv.gz",
   "scope": "Inventaire des horaires et preuves historiques publiées. L’ouverture et les observations voyageurs figurent au suivi continu."
 }
